@@ -1,0 +1,3190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VD Portfolio Tracker — Rishyavandhan</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b0e14; --surface:#111520; --border:#1e2535; --muted:#2a3048;
+    --text:#c8d0e0; --dim:#5a6480; --accent:#4fc3f7; --green:#4caf7d;
+    --amber:#f0a500; --red:#e05a5a;
+    --p0:#4fc3f7; --p1:#4fc3f7; --p2:#7c83ff; --p3:#ff8a65;
+    --p4:#66bb6a; --p5:#ffd54f; --p7:#ce93d8;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:'IBM Plex Sans',sans-serif; background:var(--bg); color:var(--text);
+         display:flex; min-height:100vh; font-size:14px; }
+
+  /* SIDEBAR */
+  aside { width:240px; min-width:240px; background:var(--surface);
+          border-right:1px solid var(--border); padding:24px 0;
+          position:sticky; top:0; height:100vh; overflow-y:auto;
+          display:flex; flex-direction:column; }
+  .logo { padding:0 20px 20px; border-bottom:1px solid var(--border); }
+  .logo h1 { font-size:13px; font-weight:600; color:var(--accent);
+             letter-spacing:0.04em; line-height:1.3; }
+  .logo p { font-size:11px; color:var(--dim); margin-top:4px;
+            font-family:'IBM Plex Mono',monospace; }
+  .total-progress { padding:16px 20px; border-bottom:1px solid var(--border); }
+  .total-progress .label { font-size:11px; color:var(--dim); margin-bottom:6px;
+                           display:flex; justify-content:space-between; }
+  .bar-wrap { background:var(--muted); height:4px; border-radius:2px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:2px; transition:width 0.3s ease; }
+  nav { padding:12px 0; flex:1; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:9px 20px;
+              cursor:pointer; border-left:3px solid transparent;
+              transition:background 0.15s, border-color 0.15s; }
+  .nav-item:hover { background:var(--muted); }
+  .nav-item.active { background:rgba(79,195,247,0.06); border-left-color:var(--accent); }
+  .nav-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .nav-label { font-size:12px; font-weight:500; flex:1; line-height:1.3; }
+  .nav-count { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--dim); }
+  .nav-mini-bar { height:2px; background:var(--muted); border-radius:1px;
+                  margin:2px 0 0; overflow:hidden; }
+  .nav-mini-fill { height:100%; border-radius:1px; }
+
+  /* MAIN */
+  main { flex:1; padding:32px 40px; overflow-y:auto; }
+  .page-header { margin-bottom:32px; }
+  .page-header h2 { font-size:24px; font-weight:300; color:#e8ecf4; margin-bottom:6px; }
+  .page-header p { font-size:12px; color:var(--dim); font-family:'IBM Plex Mono',monospace; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:36px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border);
+               border-radius:6px; padding:14px 16px; }
+  .stat-val { font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:500;
+              color:#e8ecf4; line-height:1; margin-bottom:4px; }
+  .stat-label { font-size:11px; color:var(--dim); }
+
+  .pillar-header { display:flex; align-items:baseline; gap:16px; margin-bottom:8px; }
+  .pillar-title { font-size:20px; font-weight:600; color:#e8ecf4; }
+  .pillar-tag { font-family:'IBM Plex Mono',monospace; font-size:11px;
+                padding:2px 8px; border-radius:3px; font-weight:500; }
+  .pillar-desc { font-size:12px; color:var(--dim); margin-bottom:24px; line-height:1.6; }
+  .pillar-progress-row { display:flex; align-items:center; gap:12px; margin-bottom:28px; }
+  .pillar-bar-wrap { flex:1; background:var(--muted); height:5px;
+                     border-radius:3px; overflow:hidden; }
+  .pillar-bar-fill { height:100%; border-radius:3px; transition:width 0.3s ease; }
+  .pillar-pct { font-family:'IBM Plex Mono',monospace; font-size:11px;
+                color:var(--dim); min-width:36px; text-align:right; }
+
+  .group-label { font-size:10px; font-weight:600; letter-spacing:0.1em;
+                 color:var(--dim); text-transform:uppercase; margin:20px 0 10px;
+                 display:flex; align-items:center; gap:8px; }
+  .group-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .project-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+                  gap:8px; margin-bottom:4px; }
+  .project-card { background:var(--surface); border:1px solid var(--border);
+                  border-radius:6px; padding:12px 14px; display:flex;
+                  align-items:flex-start; gap:10px; cursor:pointer;
+                  transition:border-color 0.15s, background 0.15s; user-select:none;
+                  position:relative; }
+  .project-card:hover { border-color:var(--muted); background:#141828; }
+  .project-card.done { background:rgba(76,175,125,0.04); border-color:rgba(76,175,125,0.2); }
+  .project-card.done .proj-title { color:var(--dim);
+        text-decoration:line-through; text-decoration-color:rgba(90,100,128,0.5); }
+  .proj-check { width:16px; height:16px; border:1.5px solid var(--muted);
+                border-radius:3px; flex-shrink:0; margin-top:1px;
+                display:flex; align-items:center; justify-content:center;
+                transition:all 0.15s; }
+  .project-card.done .proj-check { background:var(--green); border-color:var(--green); }
+  .proj-check svg { display:none; }
+  .project-card.done .proj-check svg { display:block; }
+  .proj-body { flex:1; min-width:0; }
+  .proj-id { font-family:'IBM Plex Mono',monospace; font-size:10px;
+             color:var(--dim); margin-bottom:2px; }
+  .proj-title { font-size:13px; font-weight:400; color:var(--text); line-height:1.4; }
+  .proj-hint { position:absolute; top:8px; right:10px; font-size:10px;
+               color:var(--dim); font-family:'IBM Plex Mono',monospace;
+               opacity:0.5; }
+  .project-card:hover .proj-hint { color:var(--accent); opacity:1; }
+
+  .pillar-section { display:none; }
+  .pillar-section.active { display:block; }
+  .filter-row { display:flex; gap:8px; margin-bottom:28px; align-items:center; }
+  .filter-btn { font-family:'IBM Plex Mono',monospace; font-size:11px;
+                padding:4px 12px; border-radius:3px; border:1px solid var(--border);
+                background:transparent; color:var(--dim); cursor:pointer;
+                transition:all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { border-color:var(--accent);
+                color:var(--accent); background:rgba(79,195,247,0.06); }
+  .filter-label { font-size:11px; color:var(--dim); margin-right:4px; }
+
+  .dependency-note { font-size:11px; color:var(--amber);
+                     background:rgba(240,165,0,0.08);
+                     border:1px solid rgba(240,165,0,0.2);
+                     border-radius:4px; padding:8px 12px; margin-bottom:20px;
+                     font-family:'IBM Plex Mono',monospace; line-height:1.6; }
+
+  @media (max-width:768px) {
+    body { flex-direction:column; }
+    aside { width:100%; height:auto; position:static; }
+    main { padding:20px; }
+    .stats-row { grid-template-columns:repeat(2,1fr); }
+  }
+
+  /* MODAL */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+             z-index:100; backdrop-filter:blur(2px); }
+  .overlay.open { display:block; }
+  .drawer { position:fixed; top:0; right:0; width:min(600px,100vw); height:100vh;
+            background:#111520; border-left:1px solid var(--border); z-index:101;
+            overflow-y:auto; transform:translateX(100%);
+            transition:transform 0.25s ease; padding:0; }
+  .drawer.open { transform:translateX(0); }
+  .drawer-head { position:sticky; top:0; background:#111520;
+                 border-bottom:1px solid var(--border); padding:16px 20px;
+                 display:flex; align-items:flex-start; gap:12px; z-index:1; }
+  .drawer-head-text { flex:1; }
+  .drawer-pid { font-family:'IBM Plex Mono',monospace; font-size:11px;
+                color:var(--dim); margin-bottom:3px; }
+  .drawer-title { font-size:16px; font-weight:600; color:#e8ecf4; line-height:1.3; }
+  .drawer-close { background:var(--muted); border:none; color:var(--dim);
+                  width:28px; height:28px; border-radius:4px; cursor:pointer;
+                  font-size:16px; display:flex; align-items:center;
+                  justify-content:center; flex-shrink:0; margin-top:2px; }
+  .drawer-close:hover { background:var(--border); color:var(--text); }
+  .drawer-body { padding:20px; }
+
+  .section-label { font-size:10px; font-weight:600; letter-spacing:0.1em;
+                   text-transform:uppercase; color:var(--accent); margin:20px 0 8px; }
+  .section-label:first-child { margin-top:0; }
+  .concept-text { font-size:13px; line-height:1.7; color:var(--text); }
+  .why-box { background:rgba(79,195,247,0.06); border:1px solid rgba(79,195,247,0.15);
+             border-radius:5px; padding:10px 14px; font-size:12px;
+             line-height:1.6; color:#90d4f5; }
+  .steps-list { list-style:none; counter-reset:step; }
+  .steps-list li { counter-increment:step; display:flex; gap:10px;
+                   margin-bottom:10px; font-size:12px; line-height:1.6; color:var(--text); }
+  .steps-list li::before { content:counter(step); font-family:'IBM Plex Mono',monospace;
+                   font-size:10px; color:var(--accent);
+                   background:rgba(79,195,247,0.1); border-radius:3px;
+                   width:20px; height:20px; display:flex; align-items:center;
+                   justify-content:center; flex-shrink:0; margin-top:1px; }
+  .eq-block { background:#0a0d14; border:1px solid var(--border);
+              border-radius:4px; padding:8px 12px; margin-bottom:6px;
+              font-family:'IBM Plex Mono',monospace; font-size:11px;
+              color:#b8d4ff; line-height:1.5; }
+  .deliverable-list { list-style:none; }
+  .deliverable-list li { display:flex; gap:8px; margin-bottom:7px;
+              font-size:12px; line-height:1.5; color:var(--text); }
+  .deliverable-list li::before { content:'▸'; color:var(--green);
+              flex-shrink:0; margin-top:1px; }
+  .matlab-list { list-style:none; }
+  .matlab-list li { font-family:'IBM Plex Mono',monospace; font-size:11px;
+              color:#a0b4d0; margin-bottom:5px; background:#0a0d14;
+              border-radius:3px; padding:5px 10px; line-height:1.4; }
+  .done-banner { background:rgba(76,175,125,0.08);
+              border:1px solid rgba(76,175,125,0.25); border-radius:5px;
+              padding:8px 14px; font-size:12px; color:var(--green);
+              display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo">
+    <h1>VD Portfolio Tracker</h1>
+    <p>Rishyavandhan V · 2026</p>
+  </div>
+  <div class="total-progress">
+    <div class="label">
+      <span>Overall progress</span>
+      <span id="total-label">0 / 0</span>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" id="total-bar" style="width:0%; background: var(--accent);"></div>
+    </div>
+  </div>
+  <nav id="sidebar-nav"></nav>
+</aside>
+
+<main id="main-content">
+  <div class="page-header">
+    <h2>Vehicle Dynamics Portfolio</h2>
+    <p>Click a pillar in the sidebar → check off projects as you complete them · click a card for the full spec</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="stat-done">0</div><div class="stat-label">Completed</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total projects</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-pillars">0</div><div class="stat-label">Pillars started</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-pct">0%</div><div class="stat-label">Progress</div></div>
+  </div>
+
+  <div id="pillar-sections"></div>
+</main>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-text">
+      <div class="drawer-pid" id="drawer-pid"></div>
+      <div class="drawer-title" id="drawer-title"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<script>
+/* =====================================================================
+   PILLARS — original structure preserved exactly.
+   Pillar 0 is the only addition (new pillar at the top).
+   ===================================================================== */
+const PILLARS = [
+  {
+    id: 'p0',
+    color: 'var(--p0)',
+    title: 'Pillar 0 — VD Fundamentals Mini-Projects',
+    short: 'Mini-Projects',
+    desc: 'Eight small self-contained MATLAB projects demonstrating core VD theory. Whiteboard-level derivations with working code and plots. Do Phase 0 before touching the lap sim.',
+    dep: 'No prerequisites. Do first.',
+    groups: [
+      { label: '0 — Core Concepts', projects: [
+        { id:'0.1', title:'Linear bicycle model' },
+        { id:'0.2', title:'Handling diagram' },
+        { id:'0.3', title:'GG diagram / friction ellipse' },
+        { id:'0.4', title:'Longitudinal dynamics' },
+        { id:'0.5', title:'Simple ABS logic' },
+        { id:'0.6', title:'Simple TCS logic' },
+        { id:'0.7', title:'Yaw moment control (TV concept)' },
+        { id:'0.8', title:'State-space bicycle model + observer' },
+      ]},
+    ]
+  },
+  {
+    id: 'p1', color: 'var(--p1)',
+    title: 'Pillar 1 — Fundamentals',
+    short: 'Fundamentals',
+    desc: 'Pure MATLAB. Physics from first principles. No commercial tools. Execute in order: loads → tyre basics → longitudinal → lateral → ride → suspension → manoeuvres.',
+    dep: null,
+    groups: [
+      { label: 'D — Load Transfer', projects: [
+        { id:'D1', title:'Static axle loads' },
+        { id:'D2', title:'Longitudinal load transfer' },
+        { id:'D3', title:'Lateral load transfer' },
+        { id:'D4', title:'Combined load transfer' },
+        { id:'D5', title:'Load transfer effect on tyre balance' },
+      ]},
+      { label: 'A — Tyre Basics', projects: [
+        { id:'A1', title:'Brush tyre model — lateral' },
+        { id:'A2', title:'Brush tyre model — longitudinal' },
+        { id:'A4', title:'Combined slip — friction ellipse' },
+      ]},
+      { label: 'B — Longitudinal Dynamics', projects: [
+        { id:'B1', title:'Point-mass longitudinal dynamics' },
+        { id:'B2', title:'Wheel dynamics and slip ratio' },
+        { id:'B3', title:'Braking and wheel lockup' },
+        { id:'B7', title:'Longitudinal LT effect on tyre capacity' },
+      ]},
+      { label: 'C — Lateral / Planar Dynamics', projects: [
+        { id:'C1', title:'Linear bicycle model — derivation' },
+        { id:'C2', title:'Steady-state yaw rate gain and sideslip' },
+        { id:'C3', title:'Eigenvalue analysis' },
+        { id:'C4', title:'Step-steer transient response' },
+        { id:'C5', title:'Frequency response — Bode plot' },
+        { id:'C6', title:'Nonlinear bicycle model' },
+        { id:'C7', title:'Handling diagram' },
+        { id:'C8', title:'GG diagram derivation' },
+        { id:'C9', title:'Four-wheel planar model' },
+      ]},
+      { label: 'E — Ride / Vertical Dynamics', projects: [
+        { id:'E1', title:'Quarter-car model — free response' },
+        { id:'E2', title:'Quarter-car — frequency response' },
+        { id:'E3', title:'Comfort vs. handling trade-off' },
+        { id:'E4', title:'ISO 8608 road profile generation' },
+        { id:'E5', title:'Half-car model — pitch dynamics' },
+        { id:'E6', title:'Damper and spring sensitivity study' },
+        { id:'E7', title:'Anti-roll bar effect' },
+      ]},
+      { label: 'F — Suspension Kinematics', projects: [
+        { id:'F1', title:'Double wishbone geometry — 2D' },
+        { id:'F2', title:'Roll centre' },
+        { id:'F3', title:'Constraint-based solver' },
+        { id:'F4', title:'Motion ratio' },
+      ]},
+      { label: 'G — Steady-State Handling & Manoeuvres', projects: [
+        { id:'G1', title:'Constant radius manoeuvre' },
+        { id:'G2', title:'Steer-pad simulation' },
+        { id:'G3', title:'ISO lane change — open loop' },
+        { id:'G4', title:'Vehicle balance sensitivity' },
+      ]},
+    ]
+  },
+  {
+    id: 'p2', color: 'var(--p2)',
+    title: 'Pillar 2 — LTS MATLAB',
+    short: 'LTS MATLAB',
+    desc: 'Lap-time simulator refactor, Python post-processing, and Simulink plant. Requires Pillar 1 tyre basics (A1, A2, A4, D1–D5) to be stable first.',
+    dep: 'Requires: D1–D5, A1–A2, A4 from Pillar 1',
+    groups: [
+      { label: 'I — Lap-Time Simulation', projects: [
+        { id:'I1', title:'Track preprocessing' },
+        { id:'I2', title:'Corner speed limit' },
+        { id:'I3', title:'Longitudinal limit from GG' },
+        { id:'I4', title:'Forward / backward pass solver' },
+        { id:'I5', title:'Lap-time sensitivity study' },
+        { id:'I6', title:'Point-mass dynamic lap-time concept' },
+      ]},
+      { label: 'J — Python Data Pipeline', projects: [
+        { id:'J1', title:'Load MATLAB result and reproduce plot' },
+        { id:'J2', title:'Batch sweep automation' },
+        { id:'J3', title:'KPI extraction and summary CSV' },
+        { id:'J4', title:'Simulation vs. reference correlation' },
+      ]},
+      { label: 'S — Simulink Plant', projects: [
+        { id:'S1', title:'Simulink plant — longitudinal dynamics subsystem' },
+        { id:'S2', title:'Simulink plant — lateral / yaw dynamics subsystem' },
+        { id:'S3', title:'Simulink tyre force block (MATLAB Function)' },
+        { id:'S4', title:'Simulink aero subsystem' },
+        { id:'S5', title:'Simulink powertrain subsystem' },
+        { id:'S6', title:'Full plant integration and signal logging' },
+        { id:'S7', title:'MATLAB vs. Simulink output comparison (MIL baseline)' },
+      ]},
+    ]
+  },
+  {
+    id: 'p3', color: 'var(--p3)',
+    title: 'Pillar 3 — Tyre Dynamics',
+    short: 'Tyre Dynamics',
+    desc: 'Deeper tyre physics. Pacejka MF5.2, combined slip, load sensitivity, coefficient fitting. Requires Pillar 1 tyre basics first.',
+    dep: 'Requires: A1, A2, A4 from Pillar 1',
+    groups: [
+      { label: 'A — Tyre Dynamics (extended)', projects: [
+        { id:'A3', title:'Pacejka MF5.2 implementation (Fy, Fx, Mz)' },
+        { id:'A5', title:'Load sensitivity — normalised peak force vs. Fz' },
+        { id:'A6', title:'Camber sensitivity and aligning moment' },
+        { id:'A7', title:'Tyre model comparison and selection rationale' },
+        { id:'A8', title:'Tyre coefficient fitting with fmincon' },
+      ]},
+    ]
+  },
+  {
+    id: 'p4', color: 'var(--p4)',
+    title: 'Pillar 4 — Controls & MPC',
+    short: 'Controls / MPC',
+    desc: 'Control theory applied to VD. MATLAB first, then Simulink closed-loop. Requires Pillar 1 bicycle model (C1–C5) and longitudinal dynamics (B1–B3).',
+    dep: 'Requires: B1–B3, C1–C5 from Pillar 1 · S1–S7 from Pillar 2 (for Simulink work)',
+    groups: [
+      { label: 'B / C — Longitudinal & Yaw Controllers (MATLAB)', projects: [
+        { id:'B4', title:'Simple ABS slip controller' },
+        { id:'B5', title:'Simple TCS' },
+        { id:'B6', title:'Launch control' },
+        { id:'C10', title:'Torque vectoring — yaw moment control' },
+      ]},
+      { label: 'H — State-Space and Observers (MATLAB)', projects: [
+        { id:'H1', title:'Bicycle model in state-space form' },
+        { id:'H2', title:'Luenberger observer for sideslip estimation' },
+        { id:'H3', title:'Kalman filter for sideslip estimation' },
+        { id:'H4', title:'ESC yaw rate controller' },
+        { id:'H5', title:'PID tuning for slip controller' },
+      ]},
+      { label: 'S — Controllers in Simulink (closed-loop)', projects: [
+        { id:'S8',  title:'ABS controller in Simulink — closed loop with plant' },
+        { id:'S9',  title:'TCS controller in Simulink' },
+        { id:'S10', title:'ESC yaw moment controller in Simulink' },
+        { id:'S11', title:'Torque vectoring controller in Simulink' },
+        { id:'S12', title:'MPC via quadprog in MATLAB Function block' },
+        { id:'S13', title:'Fixed-step solver configuration and step-size study' },
+      ]},
+    ]
+  },
+  {
+    id: 'p5', color: 'var(--p5)',
+    title: 'Pillar 5 — CAN & ADAS',
+    short: 'CAN / ADAS',
+    desc: 'Communication protocols and ADAS fundamentals. Most can be done without paid toolboxes — DBC by hand, manual bit manipulation in MATLAB, concept documents.',
+    dep: 'CAN Pack/Unpack blocks require Vehicle Network Toolbox. Core tasks are toolbox-free.',
+    groups: [
+      { label: 'P5 — CAN Fundamentals', projects: [
+        { id:'P5_1', title:'CAN frame structure — documented with signal diagram' },
+        { id:'P5_2', title:'DBC file — write by hand (5–6 signals)' },
+        { id:'P5_3', title:'Manual CAN encoding / decoding in MATLAB' },
+        { id:'P5_4', title:'CANape / INCA concept — A2L file, calibration parameter' },
+      ]},
+      { label: 'P5 — ADAS Basics', projects: [
+        { id:'P5_5', title:'Sensor modalities — camera, radar, lidar limits document' },
+        { id:'P5_6', title:'ACC longitudinal controller in MATLAB (headway PID)' },
+        { id:'P5_7', title:'AEB and LKA control chain document' },
+        { id:'P5_8', title:'VD controls vs. ADAS boundary — documented analysis' },
+      ]},
+    ]
+  },
+  {
+    id: 'p7', color: 'var(--p7)',
+    title: 'Pillar 7 — MIL / SIL / HIL / DiL',
+    short: 'MIL/SIL/HIL/DiL',
+    desc: 'Formal validation chain. Builds on Pillars 2 and 4. MIL is already implicit in S7. SIL requires fixed-step Simulink. HIL and DiL are documented concepts at basics level.',
+    dep: 'Requires: S7 from Pillar 2 · S8–S13 from Pillar 4',
+    groups: [
+      { label: 'S — Validation Workflow', projects: [
+        { id:'S14', title:'Formal MIL comparison report — all controllers' },
+        { id:'S15', title:'SIL equivalence: fixed-step vs. variable-step results' },
+        { id:'S16', title:'HIL readiness document: execution budget and I/O map' },
+        { id:'S17', title:'DiL latency analysis document' },
+      ]},
+      { label: 'P7 — Process and Safety', projects: [
+        { id:'P7_1', title:'ISO 26262 awareness — ASIL levels, V-model, traceability' },
+        { id:'P7_2', title:'Automated test harness — ABS sweep across mu and speed' },
+        { id:'P7_3', title:'Test report: pass/fail matrix with coverage rationale' },
+      ]},
+    ]
+  },
+];
+
+/* ================= PROJECT DETAILS (from extended, remapped to original IDs) ============ */
+const PROJECT_DETAILS = {
+  /* ---------- Pillar 0 ---------- */
+  "0.1": {
+    concept: "The 2-DOF linear bicycle model is the most leveraged model in VD. It reduces the full vehicle to one mass, two axles, linear tyre forces. Results in a state-space system in lateral velocity vy and yaw rate r.",
+    why: "Every VD interview asks about the bicycle model. Every ESC uses it as a reference. You must derive it from scratch.",
+    steps: [
+      "Draw FBD: vehicle at Vx, lateral velocity vy, yaw rate r. Forces Fyf at front axle, Fyr at rear.",
+      "Front slip angle: αf = δ − (vy + a·r)/Vx. Rear: αr = −(vy − b·r)/Vx. Derive from velocity diagram.",
+      "Linear tyre: Fyf = Cαf·αf, Fyr = Cαr·αr.",
+      "Newton lateral: m·(vy_dot + Vx·r) = Fyf + Fyr. Expand and rearrange.",
+      "Newton yaw: Iz·r_dot = a·Fyf − b·Fyr.",
+      "Rearrange into vy_dot = f(vy, r, δ) and r_dot = f(vy, r, δ). Write as matrix form: [vy_dot; r_dot] = A·[vy; r] + B·δ."
+    ],
+    equations: [
+      "αf = δ − (vy + a·r)/Vx",
+      "αr = −(vy − b·r)/Vx",
+      "m(v̇y + Vx·r) = Cαf·αf + Cαr·αr",
+      "Iz·ṙ = a·Cαf·αf − b·Cαr·αr",
+      "Ẋ = AX + Bδ  where X=[vy;r]"
+    ],
+    deliverables: [
+      "Function [A,B] = bicycle_model_matrices(p, Vx)",
+      "A and B printed for a concrete vehicle at 25 m/s",
+      "Full derivation as a comment block in the code",
+      "Dimensional analysis: units of each A matrix element"
+    ],
+    matlab: [
+      "A = [(Caf+Car)/m/Vx - Vx, (a*Caf-b*Car)/m/Vx; ...]",
+      "Verify with syms if desired but manual derivation must be there"
+    ]
+  },
+  "0.2": {
+    concept: "At steady-state, set derivatives to zero. Solve the linear system algebraically for yaw rate and sideslip vs speed and steering. Gives the yaw rate gain plot — the most fundamental characterisation of vehicle handling.",
+    why: "Understeer gradient, characteristic speed, neutral steer — all derived here. Every handling question comes back to this.",
+    steps: [
+      "Set vy_dot = 0 and r_dot = 0 in bicycle model.",
+      "Solve 2×2 system: A·[vy_ss;r_ss] = −B·δ → [vy_ss;r_ss] = −A\\B·δ.",
+      "Yaw rate gain: G_r = r_ss/δ (rad/s per rad).",
+      "Sideslip: β = atan2(vy_ss, Vx) ≈ vy_ss/Vx.",
+      "Sweep Vx from 5 to 60 m/s. Plot G_r and β vs Vx.",
+      "Understeer gradient: K = m/L²·(a/Cαr − b/Cαf). If K>0: understeer. K<0: oversteer. K=0: neutral."
+    ],
+    equations: [
+      "G_r = Vx/(L·(1+K·Vx²))",
+      "K = m/L²·(a/Cαr − b/Cαf)",
+      "V_ch = √(1/K)  for K>0",
+      "V_cr = √(−1/K)  for K<0"
+    ],
+    deliverables: [
+      "Plot: yaw rate gain vs speed for 3 vehicles (US, NS, OS)",
+      "Plot: sideslip angle vs speed for same",
+      "Table: K, V_ch or V_cr for each vehicle",
+      "Written: what K>0, K=0, K<0 means in plain language"
+    ],
+    matlab: [
+      "A\\B for linear solve (backslash)",
+      "fzero to find V_ch numerically from G_r peak"
+    ]
+  },
+  "0.3": {
+    concept: "GG diagram: the ax-ay boundary of achievable acceleration. Derived from tyre limits plus load transfer. Asymmetric in ax.",
+    why: "Foundation of the lap-time simulator. Every performance VD role needs this.",
+    steps: [
+      "Sweep angle θ from 0 to 360°. At each θ: ax=R·cos(θ), ay=R·sin(θ). Find maximum R.",
+      "At each (ax,ay): compute Fzf,Fzr from load transfer, then left/right from lateral LT.",
+      "Tyre force capacity at each wheel: Fy_max(Fz), Fx_max(Fz) from brush or friction ellipse.",
+      "Check: can the required forces be achieved? If not, R is too large. Binary search for maximum R.",
+      "Plot the resulting closed boundary in ax-ay space.",
+      "Overlay: μ=1.0 and μ=1.5. Show aero expanding the high-speed boundary."
+    ],
+    equations: [
+      "Boundary: Σ(Fi/Fi_max)²=1 at each tyre",
+      "ax_max_brake = (μ·Fzf+μ·Fzr)/m  [iterative with LT]"
+    ],
+    deliverables: [
+      "Function [ax_bnd, ay_bnd] = gg_diagram(p, V)",
+      "GG plot: no-aero vs with-aero at 50 m/s",
+      "GG plot: μ=1.0 vs μ=1.5",
+      "Connection comment: how this feeds corner speed limit"
+    ],
+    matlab: [
+      "fzero(@(R) g_residual(R, theta, p), R_guess) for boundary search",
+      "polar() or patch() for GG plot"
+    ]
+  },
+  "0.4": {
+    concept: "The simplest vehicle model: a point mass in 1D. Net force = drive − drag − rolling resistance. Integrate F=ma to get velocity and distance.",
+    why: "Establishes the template for all ODE-based simulation: state vector, derivative function, ode45 call, result extraction.",
+    steps: [
+      "State vector: x = [v; s]. Derivative: xdot = [a; v].",
+      "Forces: F_drive (constant or from map), F_drag = 0.5·ρ·Cd·A·v², F_roll = Crr·m·g.",
+      "Acceleration: a = (F_drive − F_drag − F_roll) / m.",
+      "Derivative function: function xdot = long_dyn(t, x, p, F_drive).",
+      "Call: [t,X] = ode45(@(t,x) long_dyn(t,x,p,F_drive), [0 60], [0;0], opts).",
+      "Validate: zero drag case → v = (F/m)·t (linear). s = (F/2m)·t² (quadratic). Check analytically."
+    ],
+    equations: [
+      "ma = F_drive − ½ρCdAv² − Crr·mg",
+      "Terminal: v_max = √(2(F_drive − Crr·mg)/(ρCdA))"
+    ],
+    deliverables: [
+      "ODE function long_dyn(t, x, p, u) with clean interface",
+      "0–100 kph run: plot v(t) and a(t)",
+      "Validation: zero-drag case matches v=Ft/m analytically",
+      "Sensitivity: Cd effect on 0–100 time and top speed"
+    ],
+    matlab: [
+      "ode45 with odeset('RelTol',1e-8,'AbsTol',1e-10)",
+      "interp1(v,t,100/3.6) for 0–100 time"
+    ]
+  },
+  "0.5": {
+    concept: "ABS prevents lockup by modulating brake torque to keep slip ratio near the peak of the Fx(κ) curve. Proportional slip controller.",
+    why: "ABS is the first bullet in the controls JD. This is the most direct demonstration of control algorithm development.",
+    steps: [
+      "Start from high-brake-torque lockup scenario.",
+      "Add controller: at each discrete timestep (dt=0.01s), compute κ_error = κ − κ_target.",
+      "Proportional: T_brake = T_brake − Kp·κ_error. Clamp T_brake to [0, T_max].",
+      "Compare: open-loop, bang-bang, proportional slip.",
+      "Metrics: stopping distance, lateral Fy capacity retained, oscillation amplitude.",
+      "Tune Kp: too low → no prevention. Too high → oscillation. Find balance."
+    ],
+    equations: [
+      "κ_error = κ − κ_target",
+      "T_brake(k) = T_brake(k−1) − Kp·κ_error",
+      "Fy_avail = Fy_max·√(1 − (Fx/Fx_max)²)"
+    ],
+    deliverables: [
+      "Controller: T_brake = abs_controller(kappa, kappa_target, T_prev, p)",
+      "3-strategy comparison plot: stopping distance, slip history, deceleration",
+      "Retained Fy capacity during ABS vs without",
+      "Tuning note: chosen Kp and sensitivity analysis"
+    ],
+    matlab: [
+      "Discrete Euler loop: Vx(k+1) = Vx(k) + (Fx/m)*dt",
+      "Anti-saturation: T_brake = max(0, min(T_max, T_brake))"
+    ]
+  },
+  "0.6": {
+    concept: "TCS prevents wheel spin during drive by limiting torque if slip ratio exceeds a target. Mirror of ABS — same plant, same controller structure, opposite torque direction.",
+    why: "Implementing it directly after ABS reinforces the architectural pattern. Shows structural relationship.",
+    steps: [
+      "Use drive model with wheel inertia.",
+      "Controller: if κ > κ_target_drive (e.g. 0.10), reduce T_drive by Kp·(κ − κ_target).",
+      "TCS activates only when κ > κ_target: one-sided control.",
+      "Compare 0–60 kph on (a) μ=1.0 tarmac, (b) μ=0.4 wet.",
+      "Show: without TCS on low-mu, wheel spins, actual acceleration poor despite high torque."
+    ],
+    equations: [
+      "T_drive_cmd = T_request − Kp·max(κ − κ_target, 0)",
+      "Same wheel dynamics as longitudinal dynamics model"
+    ],
+    deliverables: [
+      "Controller: T = tcs_controller(kappa, T_request, p)",
+      "Side-by-side: with/without TCS for 2 mu values",
+      "0–60 kph time table for all 4 combinations",
+      "Written: ABS vs TCS structural comparison"
+    ],
+    matlab: [
+      "max(kappa - kappa_target, 0) for one-sided activation",
+      "Identical loop structure to ABS"
+    ]
+  },
+  "0.7": {
+    concept: "Torque vectoring distributes drive torque asymmetrically to generate corrective yaw moment. Proportional yaw-rate feedback. Shows direct yaw moment generation.",
+    why: "TV is in the controls JD. Connects physics of yaw moment to control architecture.",
+    steps: [
+      "Use four-wheel model. Add individual rear torques: T_RL and T_RR.",
+      "Yaw moment: ΔMz = (T_RR−T_RL)·tr / (2·R).",
+      "Reference r_ref from linear bicycle model.",
+      "Controller: ΔT = Kp·(r_ref−r). T_RR = T_base/2+ΔT/2. T_RL = T_base/2−ΔT/2.",
+      "Constraint: T_RL ≥ 0, T_RR ≥ 0. Cannot generate negative drive torque."
+    ],
+    equations: [
+      "ΔMz = (T_RR−T_RL)·tr/(2R)",
+      "r_error = r_ref−r_actual",
+      "T_RL = T_base/2−ΔT/2,  T_RR = T_base/2+ΔT/2"
+    ],
+    deliverables: [
+      "TV controller integrated into four-wheel model",
+      "Comparison: no TV vs active TV in corner exit",
+      "Yaw rate tracking: reference vs actual",
+      "Individual rear wheel torque time histories"
+    ],
+    matlab: [
+      "T_RL = max(0, T_base/2 - DeltaT/2) — clamp to positive"
+    ]
+  },
+  "0.8": {
+    concept: "Write bicycle model in state-space form. Design a Luenberger observer for sideslip (not measurable directly). Show estimated vs true sideslip.",
+    why: "Sideslip estimation is the key signal for ESC. Direct application of control theory to VD.",
+    steps: [
+      "A and B from bicycle model. Output: yaw rate → C=[0 1], D=0.",
+      "Controllability: Co = [B, A·B]. rank(Co) must equal 2.",
+      "Observability with C=[0 1] (yaw rate only): Ob=[C;CA]. Check rank.",
+      "Observer: X̂_dot = A·X̂ + B·δ + L·(y − C·X̂).",
+      "Place observer poles at 3× plant pole magnitudes.",
+      "L = place(A', C', obs_poles)' — note the transpose.",
+      "Simulate with true bicycle model. Start observer at wrong IC. Show convergence."
+    ],
+    equations: [
+      "Co = [B | AB]",
+      "Ob = [C; CA]",
+      "X̂̇ = AX̂ + Bδ + L(y − CX̂)",
+      "ė = (A−LC)e"
+    ],
+    deliverables: [
+      "Observer function and numerical example",
+      "True vs estimated sideslip for step-steer with noise",
+      "Estimation error vs time for 3 observer gain levels",
+      "Convergence rate from eigenvalue placement"
+    ],
+    matlab: [
+      "place(A', C', poles)' for observer gain",
+      "Discrete Euler for observer integration"
+    ]
+  },
+
+  /* ---------- Pillar 1 ---------- */
+  "D1": {
+    concept: "A vehicle at rest on flat ground has its weight distributed between axles based on CG position. This is the starting point for every load-dependent calculation — tyre forces, brake balance, lateral load transfer all start here.",
+    why: "Every JD requires tyre-road interaction understanding. You cannot compute tyre force capacity without knowing normal load. Interview question 1 in any VD role.",
+    steps: [
+      "Define: mass m, wheelbase L = a + b, CG distance from front axle a, from rear axle b, gravity g = 9.81.",
+      "Moment equilibrium about rear contact: Fzf × L = m × g × b → Fzf = m·g·b/L.",
+      "Moment equilibrium about front contact: Fzr × L = m × g × a → Fzr = m·g·a/L.",
+      "Validate: assert Fzf + Fzr = m·g within 1e-10 N. This is your first unit test.",
+      "Package as: [Fzf, Fzr] = static_axle_loads(p) using your nested parameter struct.",
+      "Extend to per-tyre: each corner = Fzf/2 and Fzr/2 (symmetric). Document as an assumption.",
+      "Plot: Fzf and Fzr vs CG position a/L from 0 to 1. Show they cross at the 50/50 point."
+    ],
+    equations: [
+      "Fzf = m·g·b / (a + b)",
+      "Fzr = m·g·a / (a + b)",
+      "Check: Fzf + Fzr = m·g"
+    ],
+    deliverables: [
+      "Function static_axle_loads(p) → [Fzf, Fzr]",
+      "Unit test: sum equals weight to 1e-10 N",
+      "Sensitivity plot: Fzf and Fzr vs CG position a/L",
+      "Comment block explaining every parameter and sign convention"
+    ],
+    matlab: [
+      "assert(abs(Fzf+Fzr - m*g) < 1e-10) for validation",
+      "linspace(0.1, 0.9, 100) for CG sweep",
+      "Struct access: p.vehicle.mass, p.vehicle.geometry.cgToFrontAxle"
+    ]
+  },
+  "D2": {
+    concept: "Under longitudinal acceleration or braking, inertial forces act at CG height h, shifting load between axles. Higher CG and shorter wheelbase amplify this transfer. The amount removed from one axle is added to the other — total weight is unchanged.",
+    why: "Foundation for brake balance, launch control, and ABS calibration — all explicitly listed in the JDs. The CG height parameter is the most sensitive input in longitudinal dynamics.",
+    steps: [
+      "Start from static loads (D1): Fzf_static and Fzr_static.",
+      "Longitudinal acceleration ax (positive = forward) creates moment m·ax·h about the rear contact.",
+      "Load transferred: ΔFz = m·ax·h / L. Removed from front during acceleration, added to rear.",
+      "Dynamic loads: Fzf = Fzf_static − m·ax·h/L and Fzr = Fzr_static + m·ax·h/L.",
+      "For braking (ax negative): front gains load, rear loses. This is why front brakes do more work.",
+      "Implement as function: [Fzf, Fzr] = longitudinal_load_transfer(ax, p).",
+      "Plot: Fzf and Fzr vs ax from −1g to +1g. Show the cross-over point.",
+      "Find: at what deceleration does rear axle load reach zero (rear lift-off — theoretical)."
+    ],
+    equations: [
+      "ΔFz = m·aₓ·h / L",
+      "Fzf = m·g·b/L − m·aₓ·h/L",
+      "Fzr = m·g·a/L + m·aₓ·h/L"
+    ],
+    deliverables: [
+      "Function [Fzf, Fzr] = longitudinal_load_transfer(ax, p)",
+      "Plot: both axle loads vs ax over [−g, +g]",
+      "Annotated rear-lift deceleration point",
+      "Sensitivity: change h by ±50mm, show effect on ΔFz slope"
+    ],
+    matlab: [
+      "ax_range = linspace(-9.81, 9.81, 200)",
+      "plot with two y-values and legend",
+      "Hold annotations with xline() and text()"
+    ]
+  },
+  "D3": {
+    concept: "In steady-state cornering, weight shifts from inside to outside wheels. Total transfer depends on CG height and track width. The front/rear split depends on roll stiffness distribution — this is the primary chassis tuning parameter for handling balance.",
+    why: "Roll stiffness distribution directly controls understeer/oversteer balance. Moving stiffness to the front → more front lateral load transfer → front tyres lose more capacity → understeer. This mechanism is tested in every handling interview.",
+    steps: [
+      "Total lateral LT: ΔFz_total = m·ay·h / t where t = track width.",
+      "Roll stiffness: Kφf (front, N·m/rad) and Kφr (rear). Each axle contributes based on its spring stiffness and ARB.",
+      "Front lateral LT: ΔFzf = ΔFz_total × Kφf / (Kφf + Kφr).",
+      "Rear lateral LT: ΔFzr = ΔFz_total × Kφr / (Kφf + Kφr).",
+      "Individual loads (right turn): FL=Fzf/2−ΔFzf, FR=Fzf/2+ΔFzf, RL=Fzr/2−ΔFzr, RR=Fzr/2+ΔFzr.",
+      "Sweep ay from 0 to ay_limit. Plot all 4 wheel loads.",
+      "Three cases: 50/50, 70/30 (front-biased → understeer), 30/70 (rear-biased → oversteer).",
+      "Show which wheel lifts first and at what ay for each case."
+    ],
+    equations: [
+      "ΔFz_total = m·ay·h / t",
+      "ΔFzf = ΔFz_total · Kφf/(Kφf+Kφr)",
+      "ΔFzr = ΔFz_total · Kφr/(Kφf+Kφr)"
+    ],
+    deliverables: [
+      "Function [FL,FR,RL,RR] = lateral_load_transfer(ay, p)",
+      "4-wheel load plot vs ay for 3 roll stiffness distributions",
+      "Annotated wheel-lift point for each case",
+      "Paragraph: why front-heavy roll stiffness creates understeer (mechanism, not just correlation)"
+    ],
+    matlab: [
+      "tiledlayout(2,2) for 4-panel wheel load plot",
+      "linestyle variation for 3 distribution cases",
+      "yline(0) to mark zero load"
+    ]
+  },
+  "D4": {
+    concept: "Real manoeuvres combine ax and ay simultaneously — trail braking into a corner, accelerating out. All four wheel loads must be computed at once by superposing both effects. This is the input to the GG diagram and four-wheel tyre model.",
+    why: "The GG diagram (C8) and four-wheel model (C9) both require this. It is the physical basis for understanding why trail braking is limited by the combined tyre capacity at each corner.",
+    steps: [
+      "Combine D2 (longitudinal LT splits front/rear) and D3 (lateral LT splits left/right).",
+      "Careful sign convention: define positive ax = acceleration (load off front), positive ay = right turn (load off left wheels).",
+      "FL = Fzf/2 − ΔFzf(ay) + ΔFzf_long(ax), FR = Fzf/2 + ΔFzf(ay) + ΔFzf_long(ax) etc. Work out all 4 explicitly.",
+      "Build 2D sweep: ax from −1g to +0.5g, ay from −1.5g to +1.5g using meshgrid.",
+      "Compute all 4 wheel loads at each (ax, ay) point.",
+      "Validation: at every point, sum of 4 loads must equal m·g. Add assert.",
+      "Plot: 4 contour plots, one per wheel. Mark zero-load contour on each.",
+      "Identify which corner lifts first for a combined trail-braking-in-right-corner scenario."
+    ],
+    equations: [
+      "Fz_FL = Fzf/2 − ΔFzf(ay) − ΔFzlong_f(ax)",
+      "Fz_FR = Fzf/2 + ΔFzf(ay) − ΔFzlong_f(ax)",
+      "Fz_RL = Fzr/2 − ΔFzr(ay) + ΔFzlong_r(ax)",
+      "Fz_RR = Fzr/2 + ΔFzr(ay) + ΔFzlong_r(ax)"
+    ],
+    deliverables: [
+      "Function [FL,FR,RL,RR] = combined_load_transfer(ax, ay, p)",
+      "4-panel contour plot: each wheel load vs (ax, ay)",
+      "Zero-load contour highlighted on each panel",
+      "Validation assert: sum of 4 loads = m·g everywhere"
+    ],
+    matlab: [
+      "[AX,AY] = meshgrid(ax_vec, ay_vec)",
+      "contourf() for filled contour",
+      "assert(max(abs(sum_loads - m*g), [], 'all') < 1e-8)"
+    ]
+  },
+  "D5": {
+    concept: "Tyre force capacity is degressive with load — doubling Fz does not double Fy. So when load transfers to the outside tyre, it gains less force than the inside tyre loses. The net per-axle capacity drops. Which axle loses more capacity determines balance.",
+    why: "This is the physical mechanism behind roll stiffness tuning. Every handling balance change acts through this mechanism. It connects D3 directly to vehicle balance.",
+    steps: [
+      "Choose a degressive model: Fy_max = μ·Fz·(1 − ε·Fz) where ε ≈ 1e-4 1/N is a small degression coefficient.",
+      "For each axle: compute Fz_inside and Fz_outside from D3 at a given ay.",
+      "Total front Fy = Fy_max(Fz_FL) + Fy_max(Fz_FR). Compare to 2·Fy_max(Fzf/2) — the no-transfer case.",
+      "Show ΔFy = capacity_loss is always negative (load transfer always hurts total capacity).",
+      "Sweep roll stiffness distribution from 0% to 100% front. Plot front and rear Fy capacity vs distribution.",
+      "Identify: where does front capacity = rear capacity (neutral steer point)?",
+      "Moving stiffness forward: front loses more capacity → car understeers. Connect to C7 handling diagram."
+    ],
+    equations: [
+      "Fy_max(Fz) = μ·Fz·(1 − ε·Fz)",
+      "ΔFy_loss = Fy_max(Fz+ΔFz) + Fy_max(Fz−ΔFz) − 2·Fy_max(Fz) < 0",
+      "Balance point: Fy_front_available = Fy_rear_available"
+    ],
+    deliverables: [
+      "Plot: front and rear Fy capacity vs ay for 3 roll stiffness splits",
+      "Plot: capacity loss vs roll stiffness distribution (0–100% front)",
+      "Annotation: neutral balance point and oversteer/understeer regions",
+      "Written: physical explanation of why more front ARB = understeer"
+    ],
+    matlab: [
+      "Fy_max = @(Fz) mu*Fz*(1 - eps_coeff*Fz)",
+      "arrayfun for vectorised evaluation over Fz values"
+    ]
+  },
+  "A1": {
+    concept: "The brush model treats the contact patch as rows of elastic bristles. Each bristle deflects laterally as the tyre rolls with a slip angle. Integrating the bristle force over the contact patch gives total Fy. The adhesion zone (leading edge) transitions to a sliding zone (trailing edge).",
+    why: "The brush model is the physical 'why' behind tyre lateral force. Every VD interview that asks 'how does a tyre generate lateral force' expects the brush model explanation.",
+    steps: [
+      "Define contact patch: length 2a (half-length a), uniform pressure p(x) = Fz/(2a·b).",
+      "Bristle deflection at position x (x from −a to +a, leading = +a): δ(x) = tan(α)·(a+x).",
+      "Bristle force per unit area: q(x) = k·δ(x) where k is bristle stiffness per unit area.",
+      "Friction limit: q(x) ≤ μ·p(x). Find transition point x_t where k·tan(α)·(a+x_t) = μ·Fz/(2a·b).",
+      "For |x| > x_t (sliding): q(x) = μ·p(x). For x > x_t (adhesion): q(x) = k·tan(α)·(a+x).",
+      "Integrate Fy = b·∫q(x)dx from −a to +a. Split into adhesion and sliding regions.",
+      "Result: Fy = Cα·tan(α) − Cα³·tan³(α)/(3·μ·Fz) for moderate slip. Pure sliding: Fy = μ·Fz.",
+      "Plot Fy vs α for Fz = 1000, 2000, 3000 N. Overlay linear tangent from origin."
+    ],
+    equations: [
+      "δ(x) = tan(α)·(a+x)",
+      "Fy ≈ Cα·α − Cα³·α³/(3μFz)",
+      "Cα = k·a²·b",
+      "Peak at α* = arctan(μFz/Cα)"
+    ],
+    deliverables: [
+      "Function Fy = brush_lateral(alpha_deg, Fz, p)",
+      "Plot: Fy vs alpha for 3 Fz values with linear tangent overlaid",
+      "Annotated peak and sliding onset for each Fz curve",
+      "Comparison: brush vs simple tanh saturation model",
+      "One-page derivation written in your own words"
+    ],
+    matlab: [
+      "deg2rad() for input",
+      "integral() or manual trapz() for contact patch integration",
+      "hold on for multi-line plots with legend"
+    ]
+  },
+  "A2": {
+    concept: "Longitudinal brush model mirrors A1 but for slip ratio κ and longitudinal force Fx. Slip ratio = (ωR−Vx)/Vx. At zero κ: free rolling. At κ = −1: full lockup. Peak force occurs at a specific κ (typically 10–20%) — this is exactly what ABS targets.",
+    why: "ABS and TCS controllers are designed around this Fx(κ) curve. You cannot explain or design slip controllers without understanding why peak force is at finite slip.",
+    steps: [
+      "Define slip ratio: κ = (ωR − Vx)/Vx for drive, κ = (ωR − Vx)/|ωR| for brake. Document convention.",
+      "Longitudinal bristle deflection: δ_x(x) = [κ/(1+κ)]·(a+x) for drive case.",
+      "Same adhesion/sliding logic as A1 but longitudinal direction.",
+      "Peak slip: κ_peak = μ·Fz / Cx where Cx is longitudinal stiffness.",
+      "Above κ_peak, Fx decreases — this is the unstable region (lockup/spin).",
+      "Plot Fx vs κ for κ in [−1, +1] (braking left, drive right) for 3 Fz values.",
+      "Annotate: κ_peak for each Fz, μ·Fz asymptote, ABS target region."
+    ],
+    equations: [
+      "κ = (ωR − Vx)/Vx  [SAE drive convention]",
+      "Fx ≈ Cx·κ − Cx³·κ³/(3μFz)",
+      "κ_peak = μFz/Cx",
+      "Sliding: Fx = μ·Fz·sign(κ)"
+    ],
+    deliverables: [
+      "Function Fx = brush_longitudinal(kappa, Fz, p)",
+      "Plot: Fx vs κ (drive and brake) for 3 Fz values",
+      "Annotated κ_peak and μ·Fz limit for each Fz",
+      "Written note: why peak force is at finite slip"
+    ],
+    matlab: [
+      "Same structure as A1",
+      "xlim([-1 1]) for full κ range",
+      "xline(0) to separate drive and brake regions"
+    ]
+  },
+  "A4": {
+    concept: "A tyre under simultaneous Fx and Fy demand is constrained by total available friction. The friction ellipse defines: (Fx/Fx_max)² + (Fy/Fy_max)² = 1. Inside = achievable, outside = impossible.",
+    why: "Combined slip appears in every JD. The GG diagram derives from this. ABS and ESC both operate in combined slip.",
+    steps: [
+      "Define friction ellipse: Fx_max = μx·Fz, Fy_max = μy·Fz (μx ≠ μy for asymmetric tyres).",
+      "For a given Fx demand: Fy_available = Fy_max·sqrt(1 − (Fx/Fx_max)²).",
+      "Plot the full ellipse: parametric form Fx = Fx_max·cos(θ), Fy = Fy_max·sin(θ).",
+      "Overlay specific scenarios: pure braking (θ=180°), pure cornering (θ=90°), trail braking (θ=135°).",
+      "Show two cases: circular (μx=μy) and elliptical (μx=1.2, μy=1.5 — typical slick tyre).",
+      "Plot Fy_available vs Fx for one Fz — the quarter-ellipse capacity reduction curve.",
+      "Compute grip utilisation: G = sqrt((Fx/Fx_max)² + (Fy/Fy_max)²). Show G < 1 means unused capacity."
+    ],
+    equations: [
+      "(Fx/Fx_max)² + (Fy/Fy_max)² ≤ 1",
+      "Fy_avail = Fy_max·√(1 − (Fx/Fx_max)²)",
+      "G = √((Fx/Fx_max)² + (Fy/Fy_max)²)"
+    ],
+    deliverables: [
+      "Plot: friction ellipse in Fx-Fy space for 2 Fz levels and 2 μ ratios",
+      "Function Fy_available = combined_capacity(Fx, Fz, p)",
+      "Overlaid scenario points (pure brake, pure corner, combined)",
+      "Written: why maximum braking and cornering cannot occur simultaneously"
+    ],
+    matlab: [
+      "theta = linspace(0,2*pi,360); Fx=Fx_max*cos(theta); Fy=Fy_max*sin(theta)",
+      "axis equal for correct ellipse shape",
+      "scatter() for scenario points"
+    ]
+  },
+  "B1": {
+    concept: "The simplest vehicle model: a point mass in 1D. Net force = drive − drag − rolling resistance. Integrate F=ma to get velocity and distance.",
+    why: "Every simulation in this project follows this exact pattern. Getting it right once — clean function interface, proper ode45 call, structured output — means you never re-learn it.",
+    steps: [
+      "State vector: x = [v; s]. Derivative: xdot = [a; v].",
+      "Forces: F_drive (constant or from map), F_drag = 0.5·ρ·Cd·A·v², F_roll = Crr·m·g.",
+      "Acceleration: a = (F_drive − F_drag − F_roll) / m.",
+      "Derivative function: function xdot = long_dyn(t, x, p, F_drive).",
+      "Call: [t,X] = ode45(@(t,x) long_dyn(t,x,p,F_drive), [0 60], [0;0], opts).",
+      "Extract: v=X(:,1); s=X(:,2).",
+      "Validate: zero drag case → v = (F/m)·t (linear). s = (F/2m)·t² (quadratic).",
+      "Plot: v(t) and a(t). Annotate terminal velocity where drag = drive force."
+    ],
+    equations: [
+      "ma = F_drive − ½ρCdAv² − Crr·mg",
+      "Terminal: v_max = √(2(F_drive − Crr·mg)/(ρCdA))"
+    ],
+    deliverables: [
+      "ODE function long_dyn(t, x, p, u) with clean interface",
+      "0–100 kph run: plot v(t) and a(t)",
+      "Validation: zero-drag case matches v=Ft/m analytically",
+      "Sensitivity: Cd effect on 0–100 time and top speed"
+    ],
+    matlab: [
+      "ode45 with odeset('RelTol',1e-8,'AbsTol',1e-10)",
+      "interp1(v,t,100/3.6) for 0–100 time",
+      "Terminal velocity: fzero(@(v) F_drive - 0.5*rho*CdA*v^2 - Crr*m*g, 50)"
+    ]
+  },
+  "B2": {
+    concept: "Add wheel rotational inertia. State: [Vx; ω]. Drive torque accelerates the wheel (J·ω_dot = T − Fx·R). The difference between ω·R and Vx gives slip ratio. Slip ratio feeds the tyre Fx model. Tyre force accelerates the vehicle.",
+    why: "This chain is what ABS, TCS, and launch control control. You must simulate it before you can control it.",
+    steps: [
+      "State: x = [Vx; omega]. Two equations, two states.",
+      "Vehicle: m·Vx_dot = Fx(κ, Fz). Wheel: J·omega_dot = T_drive − Fx·R.",
+      "Slip ratio: κ = (omega·R − Vx) / max(Vx, 0.01). Protect against divide-by-zero.",
+      "Tyre Fx: call brush_longitudinal(κ, Fz, p) from A2.",
+      "Initial conditions: Vx=0.1, omega=0.1/R (zero slip at start).",
+      "Step input: T_drive at t=0. Observe: omega rises → κ rises → Fx rises → then if T too large, κ past peak → Fx drops → wheel spins.",
+      "Show two scenarios: T_drive = 0.8×T_peak (controlled) and T_drive = 2×T_peak (wheel spin).",
+      "4-panel plot: Vx, omega·R, κ, Fx vs time."
+    ],
+    equations: [
+      "m·V̇x = Fx(κ, Fz)",
+      "J·ω̇ = T_drive − Fx·R",
+      "κ = (ωR − Vx)/max(Vx, 0.01)"
+    ],
+    deliverables: [
+      "2-state ODE function for wheel-vehicle system",
+      "4-panel plot: vehicle speed, wheel speed, slip ratio, tyre force",
+      "Controlled vs spinning wheel spin scenario comparison",
+      "Annotated: moment of peak force and spin onset"
+    ],
+    matlab: [
+      "xdot = [Fx/m; (T_drive - Fx*R)/J]",
+      "max(Vx, 0.01) inside ODE for protection"
+    ]
+  },
+  "B3": {
+    concept: "Mirror of B2 for braking. Apply brake torque. Show slip becoming negative (wheel decelerating faster than vehicle). Demonstrate the lockup regime: past peak slip, force drops, longer stopping distance. This is the exact problem ABS solves.",
+    why: "Must demonstrate wheel lockup and its consequences before showing the ABS solution in B4.",
+    steps: [
+      "Use B2 ODE structure. T_brake acts against wheel rotation: J·omega_dot = −T_brake − Fx·R.",
+      "Three scenarios: (a) T_brake = 0.5×T_peak (below peak), (b) T_brake = T_peak (at peak), (c) T_brake = 2×T_peak (lockup).",
+      "Simulate until Vx = 0. Record stopping distance = integral of Vx dt.",
+      "Show: scenario (b) has shortest stopping distance, not (c).",
+      "Show lockup: omega → 0 while Vx > 0. Fx drops to sliding friction μ_slide·Fz < μ_peak·Fz.",
+      "Plot all 3: Vx, omega, κ, Fx, cumulative distance vs time on shared time axis.",
+      "Table: stopping distance and peak deceleration for all 3 scenarios."
+    ],
+    equations: [
+      "J·ω̇ = −T_brake − Fx·R",
+      "κ_brake < 0 (wheel decelerating faster than vehicle)",
+      "Stopping distance: s = ∫Vx dt until Vx=0"
+    ],
+    deliverables: [
+      "3-scenario braking simulation on one figure",
+      "Stopping distance comparison table",
+      "Lockup detection: time when omega·R < 0.05·Vx",
+      "Written: why maximum brake torque ≠ minimum stopping distance"
+    ],
+    matlab: [
+      "cumtrapz(t, Vx) for stopping distance",
+      "event detection: odeset('Events',@(t,x) lockup_event(t,x))"
+    ]
+  },
+  "B7": {
+    concept: "During braking, load transfers forward. The ideal front brake bias therefore increases with deceleration — more weight on front means front brakes can do more work. If rear brakes too hard relative to available Fz, rear wheels lock first — causing yaw instability.",
+    why: "Brake balance is a fundamental chassis setup parameter. Connects D2 to tyre capacity to real calibration work.",
+    steps: [
+      "For ax from 0 to −1.2g: compute Fzf(ax) and Fzr(ax) from D2.",
+      "Ideal front brake force: proportional to Fzf. Ideal ratio = Fzf/(Fzf+Fzr).",
+      "Note: μ cancels if both axles have the same tyre — ideal bias depends only on load distribution.",
+      "Plot ideal front bias (%) vs deceleration (g). Show it rises from ~60% at 0g to ~80% at 1g.",
+      "Overlay fixed bias lines: 60/40 and 70/30. Show ranges where each causes front or rear lockup.",
+      "Street car: fixed bias ~65% front. Racing car: adjustable bias chased to ideal.",
+      "Derive: at what deceleration does a 65% fixed bias cause rear lockup?"
+    ],
+    equations: [
+      "Ideal front bias = Fzf/(Fzf+Fzr)",
+      "Fzf(ax) from D2"
+    ],
+    deliverables: [
+      "Ideal brake bias curve vs deceleration",
+      "Fixed bias lines 60/40 and 70/30 overlaid",
+      "Front/rear lockup regions annotated (fill regions)",
+      "Derivation comment in code: every step written out"
+    ],
+    matlab: [
+      "fill() for lockup regions",
+      "plot ideal and fixed bias on same axes",
+      "fzero to find exact deceleration at lockup for fixed bias"
+    ]
+  },
+  "C1": {
+    concept: "The 2-DOF linear bicycle model is the most leveraged model in VD. It reduces the full vehicle to one mass, two axles, linear tyre forces. Results in a state-space system in lateral velocity vy and yaw rate r. Every steady-state result, stability analysis, ESC reference model, and observer derives from it.",
+    why: "Every VD interview asks about the bicycle model. Every ESC uses it as a reference. The most important 2 hours you will spend in this project.",
+    steps: [
+      "Draw FBD: vehicle at Vx, lateral velocity vy, yaw rate r. Forces Fyf at front axle, Fyr at rear.",
+      "Front slip angle: αf = δ − (vy + a·r)/Vx. Rear: αr = −(vy − b·r)/Vx.",
+      "Linear tyre: Fyf = Cαf·αf, Fyr = Cαr·αr.",
+      "Newton lateral: m·(vy_dot + Vx·r) = Fyf + Fyr.",
+      "Newton yaw: Iz·r_dot = a·Fyf − b·Fyr.",
+      "Rearrange into vy_dot = f(vy, r, δ) and r_dot = f(vy, r, δ).",
+      "Write as matrix form: [vy_dot; r_dot] = A·[vy; r] + B·δ.",
+      "Verify dimensions: A is 2×2 in [s⁻¹], B is 2×1."
+    ],
+    equations: [
+      "αf = δ − (vy + a·r)/Vx",
+      "αr = −(vy − b·r)/Vx",
+      "m(v̇y + Vx·r) = Cαf·αf + Cαr·αr",
+      "Iz·ṙ = a·Cαf·αf − b·Cαr·αr",
+      "Ẋ = AX + Bδ  where X=[vy;r]"
+    ],
+    deliverables: [
+      "Function [A,B] = bicycle_model_matrices(p, Vx)",
+      "A and B printed for a concrete vehicle at 25 m/s",
+      "Full derivation as a comment block in the code",
+      "Dimensional analysis: units of each A matrix element"
+    ],
+    matlab: [
+      "A = [(Caf+Car)/m/Vx - Vx, (a*Caf-b*Car)/m/Vx; ...]",
+      "Verify with syms if desired but the manual derivation must be there"
+    ]
+  },
+  "C2": {
+    concept: "At steady-state, set derivatives to zero. Solve the linear system algebraically for yaw rate and sideslip vs speed and steering. This gives the yaw rate gain plot — the most fundamental characterisation of vehicle handling.",
+    why: "Understeer gradient, characteristic speed, neutral steer — all derived here. The plot of yaw rate gain vs speed is shown in every vehicle dynamics textbook.",
+    steps: [
+      "Set vy_dot = 0 and r_dot = 0 in bicycle model.",
+      "Solve 2×2 system: A·[vy_ss;r_ss] = −B·δ → [vy_ss;r_ss] = −A\\B·δ.",
+      "Yaw rate gain: G_r = r_ss/δ (rad/s per rad).",
+      "Sideslip: β = atan2(vy_ss, Vx) ≈ vy_ss/Vx.",
+      "Sweep Vx from 5 to 60 m/s. Plot G_r and β vs Vx.",
+      "Understeer gradient: K = m/L²·(a/Cαr − b/Cαf).",
+      "Compare 3 vehicles: K=0.003 rad/g (understeer), K=0 (neutral), K=−0.002 (oversteer).",
+      "Mark V_ch = 1/sqrt(K) for understeer, V_cr = 1/sqrt(−K) for oversteer."
+    ],
+    equations: [
+      "G_r = Vx/(L·(1+K·Vx²))",
+      "K = m/L²·(a/Cαr − b/Cαf)",
+      "V_ch = √(1/K)  for K>0",
+      "V_cr = √(−1/K)  for K<0"
+    ],
+    deliverables: [
+      "Plot: yaw rate gain vs speed for 3 vehicles (US, NS, OS)",
+      "Plot: sideslip angle vs speed for same",
+      "Table: K, V_ch or V_cr for each vehicle",
+      "Written: what K>0, K=0, K<0 means for a driver in plain language"
+    ],
+    matlab: [
+      "A\\B for linear solve (backslash)",
+      "fzero to find V_ch numerically from G_r peak"
+    ]
+  },
+  "C3": {
+    concept: "Eigenvalues of the A matrix reveal stability and mode character. Complex conjugate pairs = oscillatory response. Negative real parts = stable. Tracking eigenvalues vs speed shows when and how the vehicle becomes unstable.",
+    why: "Formal stability proof. Required for control theory work. Shows you can move between physical intuition and mathematical formalism.",
+    steps: [
+      "Use bicycle_model_matrices(p, Vx) from C1.",
+      "Sweep Vx from 5 to 60 m/s. At each speed: lambda = eig(A). Store real and imaginary parts.",
+      "Plot real parts vs Vx: both must be negative for stability.",
+      "Plot imaginary parts vs Vx: non-zero = oscillatory yaw response.",
+      "Compute damping ratio: zeta = −real(λ)/abs(λ). Natural frequency: omega_n = abs(λ).",
+      "Plot zeta vs Vx. Annotate: zeta = 0.3 is considered the handling limit.",
+      "Compare oversteer vehicle: one real part crosses zero at V_cr → instability.",
+      "Physical interpretation: low damping ratio at speed means the car feels skittish / nervous."
+    ],
+    equations: [
+      "det(A−λI)=0  →  λ²−tr(A)·λ+det(A)=0",
+      "ζ = −Re(λ)/|λ|",
+      "ωn = |λ|",
+      "ωd = Im(λ)"
+    ],
+    deliverables: [
+      "Plot: real parts of both eigenvalues vs speed",
+      "Plot: damping ratio vs speed for US and OS vehicles",
+      "Table: eigenvalues, ζ, ωn at 10, 20, 30, 40 m/s",
+      "Annotation: speed where OS vehicle becomes unstable"
+    ],
+    matlab: [
+      "eig(A) — column vector",
+      "real(), imag(), abs() on complex array"
+    ]
+  },
+  "C4": {
+    concept: "Integrate the bicycle ODE for a step steer input. Extract handling metrics: rise time, overshoot, settling time. This is ISO 7401. Compare understeer vs oversteer vehicles and two speeds.",
+    why: "Step-steer is the standard transient handling test. Proving ground engineers run it on every car.",
+    steps: [
+      "ODE: Xdot = A·X + B·delta(t). Step: delta = 0 then delta_step at t=0.5s.",
+      "Integrate with ode45. IC: vy=0, r=0.",
+      "Compute ay = vy_dot + Vx·r from state.",
+      "Extract: rise time (10%→90% of r_ss), overshoot = (r_peak−r_ss)/r_ss, settling time (within 5% of r_ss).",
+      "Compare 2 speeds: 20 and 35 m/s.",
+      "Compare US vs OS vehicle on same manoeuvre.",
+      "Plot: r(t), β(t), ay(t) with annotated metrics."
+    ],
+    equations: [
+      "Ẋ = AX + Bδ(t)",
+      "ay = v̇y + Vx·r",
+      "Rise time tr: 0.1→0.9 of r_ss",
+      "OS = (r_peak−r_ss)/r_ss×100%"
+    ],
+    deliverables: [
+      "ODE function and ode45 call for bicycle transient",
+      "Step response plot with annotated rise time and overshoot",
+      "Metric table: 3 configs × 2 speeds",
+      "ISO 7401 reference: which metric corresponds to which ISO definition"
+    ],
+    matlab: [
+      "Step input: delta = delta_step*(t>=0.5)",
+      "interp1 for rise time from discrete result"
+    ]
+  },
+  "C5": {
+    concept: "Frequency response of yaw rate/steering angle vs frequency. Shows DC gain, yaw resonance (~1–3 Hz), and −3dB bandwidth. Yaw bandwidth is a key handling metric.",
+    why: "Frequency response analysis is required by German MATLAB JD. Bode plot is the control engineer's primary tool.",
+    steps: [
+      "Transfer function: H(s) = C·(sI−A)⁻¹·B. Output = r (yaw rate), C = [0 1], D = 0.",
+      "Evaluate: H(jω) for ω from 0.1 to 100 rad/s.",
+      "Compute: |H(jω)| in dB and angle(H(jω)) in degrees.",
+      "Plot Bode: magnitude and phase vs frequency (Hz) on log scale.",
+      "Identify: DC gain, resonant peak, −3dB bandwidth.",
+      "Compare 3 vehicles at same speed. Compare same vehicle at 3 speeds.",
+      "Also compute sideslip/steering TF: same method, different C matrix."
+    ],
+    equations: [
+      "H(s) = C(sI−A)⁻¹B",
+      "|H(jω)|_dB = 20·log₁₀|H(jω)|",
+      "Bandwidth: ω where |H|=|H_DC|/√2"
+    ],
+    deliverables: [
+      "Function [mag,phase] = bicycle_freq_response(p, Vx, freq)",
+      "Bode plot: 3 vehicle configs at one speed",
+      "Bode plot: same vehicle at 3 speeds",
+      "Table: DC gain and bandwidth for each configuration"
+    ],
+    matlab: [
+      "H = C*((1j*omega*eye(2)-A)\\B) for each frequency — no toolbox needed",
+      "semilogx for frequency axis",
+      "20*log10(abs(H)) for dB"
+    ]
+  },
+  "C6": {
+    concept: "Replace linear tyre forces with nonlinear brush/saturation model. Slip angles computed from state at each step. Shows limit understeer (front saturates → car goes straight), limit oversteer (rear saturates → spin).",
+    why: "Limit behaviour is what active safety systems manage. Cannot demonstrate ESC (H4) without first showing what happens without it.",
+    steps: [
+      "ODE: same structure as C4 but Fyf = f_tyre(αf, Fzf), Fyr = f_tyre(αr, Fzr).",
+      "Slip angles: αf = δ − vy/Vx − a·r/Vx, αr = −vy/Vx + b·r/Vx.",
+      "Tyre function: brush model (A1) or simple saturation: Fy = Cα·α·(1−|α|/α_sat).",
+      "Simulate step-steer at 2°, 5°, 10°. Linear and nonlinear should match at 2°.",
+      "At 10°: understeer vehicle → front saturates, yaw rate plateaus. Oversteer → rear saturates, yaw diverges.",
+      "Phase portrait: plot r vs β for many initial conditions using quiver (vector field).",
+      "Show stable equilibrium (US vehicle) and unstable saddle point (OS at limit)."
+    ],
+    equations: [
+      "αf = δ − (vy + a·r)/Vx",
+      "Fyf = Cαf·αf·(1 − |αf|/αsat)",
+      "Nonlinear ODE: Ẋ = f(X, δ, Vx)"
+    ],
+    deliverables: [
+      "Nonlinear bicycle ODE function",
+      "Linear vs nonlinear comparison at 2°, 5°, 10° steer",
+      "Phase portrait with vector field",
+      "Annotated limit understeer and oversteer points"
+    ],
+    matlab: [
+      "ode45 handles nonlinear naturally",
+      "meshgrid + quiver for phase portrait vector field"
+    ]
+  },
+  "C7": {
+    concept: "Handling diagram: plot front slip angle, rear slip angle, and their difference vs lateral acceleration in steady-state. Slope of (αf−αr) vs ay = understeer gradient K. Primary tool for chassis balance assessment.",
+    why: "The handling diagram is THE tool for characterising vehicle balance. Every chassis development discussion uses it.",
+    steps: [
+      "Sweep ay from 0 to ay_limit (where tyres saturate).",
+      "At each ay: find αf and αr that produce the required lateral forces. Include load transfer from D3.",
+      "With load transfer: Fzf and Fzr change with ay → tyre capacity changes → solve iteratively.",
+      "Compute Δα = αf − αr. Plot αf, αr, Δα all vs ay/g on one figure.",
+      "Extract K = dΔα/d(ay/g) from initial slope. Verify against analytical formula from C2.",
+      "Show: at high ay, slope changes (progressive understeer or oversteer snap depending on tyre model).",
+      "Three cases: 50/50, 60/40, 40/60 roll stiffness. Show balance shift on diagram."
+    ],
+    equations: [
+      "Fyf = m·ay·b/L + ΔFyf_load_transfer",
+      "αf = Fyf/Cαf  [linear], or from brush/MF",
+      "K = d(αf−αr)/d(ay/g)"
+    ],
+    deliverables: [
+      "Function [af,ar] = handling_diagram(ay_vec, p) with load transfer",
+      "Diagram: αf, αr, Δα vs ay/g",
+      "K from initial slope vs K from C2 formula — verify they agree",
+      "Three roll stiffness cases overlaid"
+    ],
+    matlab: [
+      "gradient(delta_alpha, ay) for numerical K",
+      "fzero or lsqnonlin to solve balanced forces at each ay"
+    ]
+  },
+  "C8": {
+    concept: "GG diagram: the ax-ay boundary of achievable acceleration. Derived from tyre limits plus load transfer. Asymmetric in ax (different braking vs drive capacity). The QSS lap-time solver uses this as its primary constraint.",
+    why: "Foundation of the lap-time simulator (I2, I3). Every performance VD role needs this.",
+    steps: [
+      "Sweep angle θ from 0 to 360°. At each θ: ax=R·cos(θ), ay=R·sin(θ). Find maximum R.",
+      "At each (ax,ay): compute Fzf,Fzr from D2, then left/right from D3 (combined D4).",
+      "Tyre force capacity at each wheel: Fy_max(Fz), Fx_max(Fz) from brush or friction ellipse.",
+      "Check: can the required forces be achieved? If not, R is too large. Binary search for maximum R.",
+      "Plot the resulting closed boundary in ax-ay space.",
+      "Overlay: μ=1.0 (wet) and μ=1.5 (slick). Show aero expanding the high-speed boundary.",
+      "Verify: pure braking maximum = (μf·Fzf + μr·Fzr)/m."
+    ],
+    equations: [
+      "Boundary: Σ(Fi/Fi_max)²=1 at each tyre",
+      "ax_max_brake = (μ·Fzf+μ·Fzr)/m  [iterative with LT]"
+    ],
+    deliverables: [
+      "Function [ax_bnd, ay_bnd] = gg_diagram(p, V) returning full envelope",
+      "GG plot: no-aero vs with-aero at 50 m/s",
+      "GG plot: μ=1.0 vs μ=1.5",
+      "Connection comment: how this feeds I2 (corner speed limit)"
+    ],
+    matlab: [
+      "fzero(@(R) g_residual(R, theta, p), R_guess) for boundary search",
+      "polar() or patch() for GG plot",
+      "axis equal"
+    ]
+  },
+  "C9": {
+    concept: "Extend bicycle model to 4 individual tyres with track-width effect on slip angles. Individual wheel loads from D4. Individual forces. Required for torque vectoring (C10), ESC (H4), and individual brake control.",
+    why: "Individual tyre forces are required for all Pillar 4 controllers. The torque vectoring demo (C10) and the Simulink controllers (S8–S11) all depend on this extension.",
+    steps: [
+      "Individual slip angles: αFL = δ−(vy+a·r)/Vx+r·tf/(2·Vx), αFR = δ−(vy+a·r)/Vx−r·tf/(2·Vx).",
+      "αRL = −(vy−b·r)/Vx+r·tr/(2·Vx), αRR = −(vy−b·r)/Vx−r·tr/(2·Vx).",
+      "Individual loads: call D4 function at each timestep with current ax and ay.",
+      "Tyre forces at each corner from brush or MF model.",
+      "Sum: ΣFy = FyFL+FyFR+FyRL+FyRR, ΣMz = a·(FyFL+FyFR) − b·(FyRL+FyRR) + lateral offset terms.",
+      "Compare with bicycle model: small inputs → identical. Large inputs → four-wheel more accurate.",
+      "Plot: individual tyre slip angles and forces vs time for step-steer."
+    ],
+    equations: [
+      "αFL = δ − (vy+a·r)/Vx + r·tf/2/Vx",
+      "αRL = −(vy−b·r)/Vx + r·tr/2/Vx",
+      "[αFR, αRR: same with minus sign on track term]"
+    ],
+    deliverables: [
+      "Four-wheel ODE function",
+      "Per-wheel slip angle and force history for step-steer",
+      "Bicycle vs four-wheel comparison plot",
+      "Annotated: which tyre saturates first"
+    ],
+    matlab: [
+      "Output structure: forces.FL, forces.FR etc.",
+      "6-element state optional: add roll and pitch later"
+    ]
+  },
+  "E1": {
+    concept: "Quarter-car: 2-DOF — sprung mass ms on spring+damper on unsprung mass mu on tyre spring kt. Two resonances: body bounce ~1 Hz, wheel hop ~10 Hz. Derive equations, write state-space, compute natural frequencies and damping ratios analytically.",
+    why: "Quarter-car is the foundation for all ride analysis. German MATLAB JD explicitly requires it.",
+    steps: [
+      "Masses: ms (body), mu (wheel+hub). Springs: ks (suspension), kt (tyre). Damper: cs.",
+      "Equations: ms·z̈s = −ks(zs−zu) − cs(żs−żu). mu·z̈u = ks(zs−zu) + cs(żs−żu) − kt(zu−zr).",
+      "State: x = [zs;żs;zu;żu]. Write 4×4 A matrix and B vector for zr input.",
+      "Compute eigenvalues: two complex pairs. Real parts give damping. Imaginary parts give frequencies.",
+      "Identify: ωbody ≈ √(ks/ms) ≈ 1 Hz, ωwheel ≈ √((ks+kt)/mu) ≈ 10 Hz.",
+      "Compute damping ratio for each mode from eigenvalues.",
+      "Free response: IC = [0.05;0;0;0] (body pushed down 50mm). Plot z_s(t) and z_u(t)."
+    ],
+    equations: [
+      "ms·z̈s = −ks(zs−zu) − cs(żs−żu)",
+      "mu·z̈u = ks(zs−zu) + cs(żs−żu) − kt(zu−zr)",
+      "ωbody ≈ √(ks/ms) ≈ 1 Hz",
+      "ωwheel ≈ √((ks+kt)/mu) ≈ 10 Hz"
+    ],
+    deliverables: [
+      "State-space function [A,B] = quarter_car_matrices(p)",
+      "Free response plot: body and wheel displacement vs time",
+      "Natural frequencies and damping ratios for both modes",
+      "Parameter table with physically realistic values"
+    ],
+    matlab: [
+      "4-state system: x = [zs;dzs;zu;dzu]",
+      "eig(A) gives 4 eigenvalues (2 conjugate pairs)"
+    ]
+  },
+  "E2": {
+    concept: "Drive the quarter-car with sinusoidal road input at varying frequencies. Transfer functions: body acceleration (comfort) and tyre load variation (handling). The two resonances and the anti-resonance between them reveal fundamental comfort-handling trade-off physics.",
+    why: "Frequency-domain ride analysis is bread-and-butter for chassis development. German MATLAB JD and WiMi both require it.",
+    steps: [
+      "Outputs: body acceleration = −ks(zs−zu)/ms − cs(żs−żu)/ms = from A matrix row 2.",
+      "Tyre load variation: ΔFz = kt·(zu−zr). Express as C·x + D·zr.",
+      "Frequency sweep: ω from 0.1 to 200 rad/s (0.016–32 Hz).",
+      "H(jω) = C·(jωI−A)⁻¹·B + D for each ω.",
+      "Plot both transfer functions on log-log scale (frequency in Hz on x-axis).",
+      "Identify: body resonance peak at ~1 Hz in acceleration TF. Wheel hop at ~10 Hz in both. Anti-resonance (dip) in tyre load TF between the two peaks.",
+      "Vary cs: show how damping affects each peak differently."
+    ],
+    equations: [
+      "H(jω) = C·(jωI−A)⁻¹·B + D",
+      "Body accel TF peaks at ωbody and ωwheel",
+      "Tyre load TF has anti-resonance between peaks"
+    ],
+    deliverables: [
+      "Frequency response function for body acceleration and tyre load variation",
+      "Log-log plot with both TFs and annotated peaks",
+      "Three damping levels overlaid: underdamped, optimal, overdamped",
+      "Physical explanation of anti-resonance"
+    ],
+    matlab: [
+      "H = C*((1j*omega*eye(4)-A)\\B) — manual, no toolbox",
+      "loglog(freq_hz, abs(H_accel), abs(H_tyre))"
+    ]
+  },
+  "E3": {
+    concept: "Softening spring improves comfort but worsens road-holding. More damping reduces body resonance but raises wheel hop. The Pareto front of comfort vs handling shows you cannot improve both simultaneously with passive suspension. This is WHY active/semi-active dampers exist.",
+    why: "This trade-off is explicitly listed in the German MATLAB JD ('Ride & Handling, comfort vs performance, influence of damping/stiffness').",
+    steps: [
+      "Metrics: comfort = RMS body acceleration (1–20 Hz band), handling = RMS tyre load variation (1–20 Hz).",
+      "Sweep ks from 5000 to 50000 N/m (20 steps), cs from 500 to 10000 N·s/m (20 steps).",
+      "For each (ks,cs): compute road frequency response from E2. Integrate for RMS metrics using trapz.",
+      "2D scatter: comfort (x-axis) vs handling (y-axis). Each point = one (ks,cs) combination.",
+      "Pareto front: boundary where improving one degrades the other.",
+      "Annotate regions: road car, sports car, race car.",
+      "Show: active suspension can break the trade-off."
+    ],
+    equations: [
+      "Comfort = √(∫|H_accel(ω)|² dω)",
+      "Handling = √(∫|H_tyre(ω)|² dω)"
+    ],
+    deliverables: [
+      "Comfort and handling metrics vs ks and vs cs",
+      "Pareto front scatter plot with annotated regions",
+      "Written: why passive suspension cannot break the trade-off"
+    ],
+    matlab: [
+      "meshgrid(ks_range, cs_range)",
+      "trapz(omega, abs(H).^2) for RMS",
+      "scatter() for Pareto plot"
+    ]
+  },
+  "E4": {
+    concept: "ISO 8608 classifies road roughness A–H using power spectral density (PSD). Generate synthetic road profiles from PSD. Drive the quarter-car over them. Compute RMS body acceleration vs speed and road class.",
+    why: "WiMi roles are specifically about 'virtual vehicles driving over digitised road surfaces of OEM proving grounds.' This project builds that capability in MATLAB from scratch.",
+    steps: [
+      "PSD: Φ(n) = Φ(n0)·(n/n0)^−2. Classes: A=1e-6, B=4e-6, C=16e-6 m³/cycle. n0=0.1 cycle/m.",
+      "Spatial frequency array: n from 0.01 to 10 cycle/m. Amplitude: A(n) = sqrt(2·Φ(n)·Δn).",
+      "Random phase: φ(n) = 2π·rand(size(n)).",
+      "Road profile: z(x) = real(IFFT(A·exp(jφ))) for x from 0 to L metres.",
+      "Time domain: z(t) = z(Vx·t) for vehicle speed Vx. Interpolate.",
+      "Drive quarter-car: z(t) = road input. Simulate with ode45 or Euler.",
+      "RMS body acceleration vs Vx (5 to 40 m/s) for road classes A, B, C.",
+      "Plot road elevation profile (200m) and time history of body acceleration at 20 m/s."
+    ],
+    equations: [
+      "Φ(n) = Φ(n0)·(n/n0)^−2",
+      "z(x) = IFFT(√(2Φ(n)Δn)·e^{jφ})",
+      "RMS_a = √(mean(z̈_s²))"
+    ],
+    deliverables: [
+      "Road profile generator: z = generate_road_profile(L, class, dx)",
+      "Road elevation plot for classes A, B, C over 200m",
+      "Body acceleration time history at 20 m/s for all 3 classes",
+      "RMS vs speed plot for all 3 classes"
+    ],
+    matlab: [
+      "ifft() for profile synthesis",
+      "rand() for random phase",
+      "interp1(x_spatial, z, Vx*t) for time conversion"
+    ]
+  },
+  "E5": {
+    concept: "Half-car model adds pitch DOF. 4 DOF: body bounce z, body pitch θ, front unsprung z_uf, rear unsprung z_ur. 8-state system. Pitch and bounce couple through spring forces. Pitch mode ~1.5 Hz, bounce ~1 Hz.",
+    why: "Pitch dynamics affect braking feel and road input isolation. Needed for a complete ride model.",
+    steps: [
+      "Geometric coupling: zs_f = z + a·θ (front body corner), zs_r = z − b·θ (rear body corner).",
+      "Body bounce: ms·z̈ = −ksf(zs_f−z_uf) − csf(żs_f−żuf) − ksr(zs_r−z_ur) − csr(...).",
+      "Body pitch: Iy·θ̈ = −a·[ksf(zs_f−z_uf)+csf(...)] + b·[ksr(zs_r−z_ur)+csr(...)].",
+      "Unsprung: same as quarter-car at each axle. 8-state system total.",
+      "Write 8×8 A matrix. eig(A) gives 4 conjugate pairs = 4 modes.",
+      "Identify modes: bounce, pitch, front wheel hop, rear wheel hop.",
+      "Free response from pure bounce IC: observe pitch excitation. Pure pitch IC: observe bounce excitation.",
+      "Plot: z(t) and θ(t) showing coupling."
+    ],
+    equations: [
+      "ms·z̈ = ΣFz(front+rear springs)",
+      "Iy·θ̈ = ΣMpitch",
+      "zs_f = z+a·θ,  zs_r = z−b·θ"
+    ],
+    deliverables: [
+      "8-state half-car A matrix",
+      "Free response: z(t) and θ(t) for bounce and pitch initial conditions",
+      "Frequency response: body acceleration and pitch acceleration",
+      "4 natural frequencies identified and labelled"
+    ],
+    matlab: [
+      "8×8 A matrix — build manually or with symbolic toolbox for verification",
+      "subplot(2,1,n) for bounce and pitch"
+    ]
+  },
+  "E6": {
+    concept: "Vary ks and cs independently, compute natural frequencies, damping ratios, and RMS comfort/handling metrics. Build a sensitivity map. Identify which parameter controls which attribute.",
+    why: "Sensitivity studies and data-driven design improvements are explicitly listed in German MATLAB JD.",
+    steps: [
+      "Sweep 1: ks from 5000 to 50000 N/m, 20 steps, cs fixed. Record ωbody, ζbody, ωwheel, ζwheel, RMS comfort, RMS handling.",
+      "Sweep 2: cs from 500 to 15000 N·s/m, 20 steps, ks fixed. Same outputs.",
+      "Sweep 3: mu from 20 to 60 kg. Record wheel hop frequency shift.",
+      "Plot: 4 outputs vs each swept parameter.",
+      "Sensitivity table: for ±10% change in each parameter, what % change in each metric?",
+      "Ranking: which parameter most controls body frequency? Damping? Road-holding?"
+    ],
+    equations: [
+      "ωbody = √(ks/ms)  [approximate]",
+      "ζbody ≈ cs/(2·√(ks·ms))  [approximate]"
+    ],
+    deliverables: [
+      "Sensitivity sweep function: results = suspension_sensitivity(param_name, range, p_base)",
+      "4-panel plots for ks and cs sweeps",
+      "Sensitivity table: % change per parameter per output",
+      "Design recommendation"
+    ],
+    matlab: [
+      "p_mod = p; p_mod.suspension.ks = val",
+      "Cell array for results collection"
+    ]
+  },
+  "E7": {
+    concept: "Anti-roll bar (ARB) resists differential suspension travel (roll) but not equal travel (ride). Adds to roll stiffness Kφ without changing ride spring rate. Its contribution to lateral load transfer distribution (D3) directly affects handling balance.",
+    why: "ARB is the primary handling balance tuning tool without affecting ride. The distinction between roll stiffness and ride stiffness is a key VD concept tested in interviews.",
+    steps: [
+      "In lateral LT model (D3): Kφf_total = Kφf_springs + Kφf_ARB.",
+      "ARB stiffness contribution: K_ARB_wheel = k_ARB·(motion_ratio)²·(track/2)².",
+      "Roll angle: φ = m·ay·h / (2·Kφf_total + 2·Kφr_total). Show ARB reduces roll.",
+      "Ride frequency: ωbody = √(ks/ms) — ARB does NOT appear.",
+      "Sweep front ARB stiffness from 0 to 50000 N·m/rad. Plot roll angle vs ay for each value.",
+      "Connect to D5/C7: compute understeer gradient K for each ARB setting. Show K increases with front ARB.",
+      "Balance summary: front ARB increases understeer, reduces roll, does not change ride frequency."
+    ],
+    equations: [
+      "Kφf_total = Kφf_springs + Kφf_ARB",
+      "Roll: φ = m·ay·h/(2Kφf+2Kφr)",
+      "Ride: ωbody = √(ks/ms)  — ARB absent"
+    ],
+    deliverables: [
+      "Roll angle vs ay for 3 front ARB settings",
+      "Understeer gradient K vs front ARB stiffness",
+      "Written: why ARB affects balance but not ride",
+      "Connection to D5: show which load transfer term the ARB modifies"
+    ],
+    matlab: [
+      "Extend lateral_load_transfer.m with p.suspension.arb.front parameter",
+      "rerun C7 handling diagram with different ARB settings"
+    ]
+  },
+  "F1": {
+    concept: "Define a double-wishbone suspension by its hardpoints. For a given wheel travel, compute wheel centre path, camber change, and toe change using geometry.",
+    why: "Suspension kinematics are required for WiMi and German MATLAB JD. Building a geometry solver from scratch proves fundamental multibody understanding.",
+    steps: [
+      "Hardpoints (front view): UCA chassis inner (UI), UCA outer = upper ball joint (UBJ), LCA chassis inner (LI), LCA outer = lower ball joint (LBJ).",
+      "Link lengths: L_UCA = |UBJ−UI|, L_LCA = |LBJ−LI|. Fixed constants.",
+      "For prescribed wheel travel Δz: find new UBJ and LBJ positions using circle intersections.",
+      "Wheel centre = midpoint of UBJ and LBJ (simplified). Camber angle γ = atan2(UBJ_x−LBJ_x, UBJ_z−LBJ_z).",
+      "Sweep Δz from −50mm to +50mm. Compute γ at each position.",
+      "Camber gain: dγ/dΔz. Typical: −0.5 to −1.5 deg/cm.",
+      "For toe: repeat in plan view with steering arm geometry."
+    ],
+    equations: [
+      "Link constraint: |P_ball − P_chassis|² = L²",
+      "Camber: γ = atan2(UBJ_x−LBJ_x, UBJ_z−LBJ_z)",
+      "Camber gain: dγ/dz in deg/mm"
+    ],
+    deliverables: [
+      "Function kinematics = dw_kinematics_2d(hardpoints, travel_range)",
+      "Camber vs wheel travel plot with camber gain annotation",
+      "Wheel centre path plot (arc in front view)",
+      "Comparison: two hardpoint sets with different camber gains"
+    ],
+    matlab: [
+      "Circle intersection: solve using cos rule or fsolve",
+      "Physical values: UBJ at [±0.3m, 0.4m], LBJ at [±0.3m, 0.15m] from centreline"
+    ]
+  },
+  "F2": {
+    concept: "Roll centre height from force-line method: extend wishbone lines to find instant centre, draw line from contact patch through instant centre, intersection with centreline = roll centre.",
+    why: "Roll centre height is a fundamental suspension geometry parameter. Its migration during roll affects balance. Discussed in virtually every VD interview touching suspension.",
+    steps: [
+      "Extend upper wishbone line (UI to UBJ) until it hits the vehicle centreline or infinity.",
+      "Extend lower wishbone line (LI to LBJ) similarly.",
+      "Intersection of the two extended lines = wheel instant centre IC.",
+      "Draw line from tyre contact patch (ground level, at track/2 from centreline) through IC.",
+      "Intersection of this line with vehicle centreline = roll centre RC.",
+      "RC height hRC from geometry (similar triangles).",
+      "Repeat for front and rear. Compute roll moment arm = h_CG − (hRC_f + hRC_r)/2.",
+      "Sweep wheel travel: plot RC height migration vs travel and vs roll angle."
+    ],
+    equations: [
+      "hRC from similar triangles: hRC = hCP + (t/2)·hIC/(dIC)",
+      "Roll moment arm: h_RM = h_CG − hRC"
+    ],
+    deliverables: [
+      "Function hRC = roll_centre_height(hardpoints)",
+      "Geometric diagram showing wishbones, IC, force line, RC",
+      "RC height vs wheel travel plot",
+      "Effect on load transfer: show geometric vs elastic split"
+    ],
+    matlab: [
+      "Line intersection: solve 2×2 linear system from two point-slope line equations",
+      "annotate() or text() for diagram labels"
+    ]
+  },
+  "F3": {
+    concept: "General suspension geometry as constraint equations g(q,p)=0. Solve with fsolve at each travel. Use continuation (previous solution = next initial guess) for stability. This is the form used inside all commercial MBS tools.",
+    why: "Understanding constraint-based solvers at the mathematical level is key for WiMi and MBS-adjacent roles.",
+    steps: [
+      "DOFs: q = [UBJ_x; UBJ_z; LBJ_x; LBJ_z; WC_x; WC_z] — 6 unknowns in 2D.",
+      "Constraints: |UBJ−UI|=L_UCA, |LBJ−LI|=L_LCA, WC = midpoint UBJ+LBJ, z_WC = z_target.",
+      "At each z_target from −50mm to +50mm: fsolve(g, q_prev). Use q_prev as initial guess (continuation).",
+      "Verify: residual norm after fsolve < 1e-10 at every step.",
+      "Extract camber, toe, and wheel centre path from solution q.",
+      "Compare output with F1: must give identical kinematic results."
+    ],
+    equations: [
+      "g_1 = |q_UBJ − p_UI|² − L_UCA² = 0",
+      "g_5 = q_WC_z − z_target = 0",
+      "Continuation: q0 = q_prev_solution"
+    ],
+    deliverables: [
+      "Constraint function g = suspension_constraints(q, p, z_target)",
+      "fsolve loop with continuation",
+      "Camber vs travel — identical to F1 output",
+      "Convergence: residual norm vs travel position"
+    ],
+    matlab: [
+      "fsolve with optimset('TolFun',1e-12)",
+      "Initialise: q0 = q_design_position for first step, then q_prev for continuation"
+    ]
+  },
+  "F4": {
+    concept: "Motion ratio: how wheel travel maps to spring/damper travel. MR < 1 means spring sees less displacement than wheel — effective wheel spring rate = k_spring × MR². Non-constant MR makes effective rate progressive or regressive.",
+    why: "Every chassis engineer uses motion ratio to convert spring rate to wheel rate. Getting it wrong means all your quarter-car natural frequencies are incorrect.",
+    steps: [
+      "Locate spring attachment point on lower wishbone (or rocker for pushrod).",
+      "Compute spring travel at Δz = +1mm wheel bump using F1 or F3 geometry.",
+      "MR = spring_travel_mm / 1mm wheel_travel.",
+      "Effective wheel spring rate: k_wheel = k_spring × MR².",
+      "Effective damper coefficient: c_wheel = c_damper × MR².",
+      "Sweep wheel travel: MR vs travel (it changes as wishbone angle changes).",
+      "Progressive effective rate: MR increases in bump → k_wheel increases.",
+      "Update E1 quarter-car parameters using wheel-centre rates, not spring rates."
+    ],
+    equations: [
+      "MR = Δspring / Δwheel",
+      "k_wheel = k_spring·MR²",
+      "c_wheel = c_damper·MR²"
+    ],
+    deliverables: [
+      "Motion ratio function: MR = compute_motion_ratio(hardpoints, spring_attachment, dz)",
+      "MR vs wheel travel plot over ±50mm",
+      "Effective wheel spring and damper rate vs travel",
+      "Corrected quarter-car parameters table using MR-adjusted values"
+    ],
+    matlab: [
+      "Numerical: MR ≈ (spring_pos(z+dz) − spring_pos(z))/dz",
+      "dz = 0.001m for numerical differentiation"
+    ]
+  },
+  "G1": {
+    concept: "ISO 4138: vehicle on fixed-radius circle, speed varied. At each speed, find required steering angle, front/rear slip angles, tyre forces for steady-state circular travel.",
+    why: "ISO 4138 constant-radius is a standard proving ground test. German MATLAB JD mentions 'standard manoeuvres and KPI evaluation.'",
+    steps: [
+      "Set R = 50m. Speed V from 5 m/s to V_max where ay = V²/R exceeds tyre limit.",
+      "ay = V²/R, r_ss = V/R.",
+      "From steady-state bicycle model (C2): solve for vy_ss and δ at each V.",
+      "Include load transfer (D3) at each ay. Update Fzf,Fzr. Iterate.",
+      "Compute αf and αr from steady-state solution.",
+      "Plot: steering angle vs V and vs ay. Plot αf−αr vs ay (handling diagram).",
+      "Identify: linear region slope (K), saturation onset, maximum lateral acceleration."
+    ],
+    equations: [
+      "ay = V²/R",
+      "r_ss = V/R",
+      "Δα = αf−αr = K·ay  [linear region]"
+    ],
+    deliverables: [
+      "Function result = constant_radius(R, V_vec, p)",
+      "Steering angle vs lateral acceleration",
+      "Handling diagram from manoeuvre overlay with C7 steady-state result",
+      "Extracted K verified against analytical formula"
+    ],
+    matlab: [
+      "V_vec = linspace(5, 30, 100)",
+      "fsolve for nonlinear case at high ay"
+    ]
+  },
+  "G2": {
+    concept: "Steer-pad: ramp speed on fixed radius using nonlinear bicycle model. Captures transition from linear to limit and shows balance change as tyres saturate.",
+    why: "Demonstrates connection between transient simulation and steady-state results.",
+    steps: [
+      "R = 50m. Ramp Vx from 5 to 25 m/s over 60s. Steering held at fixed angle.",
+      "Or: open-loop fixed steer on constant-speed forward integration.",
+      "Integrate nonlinear bicycle ODE (C6) with the ramping speed as a scheduled input.",
+      "Record: ay(t), αf(t), αr(t), r(t).",
+      "Extract: handling diagram from time-domain (αf−αr vs ay).",
+      "Overlay on G1 steady-state result: should match at low ay, diverge at limit due to transient.",
+      "Annotate: linear region, saturation onset, limit lateral acceleration."
+    ],
+    deliverables: [
+      "Steer-pad simulation using C6",
+      "Handling diagram: time-domain vs steady-state overlay",
+      "Time histories: ay, r, vy, αf, αr",
+      "Annotated saturation onset and limit"
+    ],
+    matlab: [
+      "Schedule Vx as time-varying input to C6 ODE",
+      "Extract handling diagram: plot αf−αr vs ay from time history"
+    ]
+  },
+  "G3": {
+    concept: "ISO 3888-style double lane change: two opposing steer ramps. Drive through 4-wheel model (C9). Evaluate lateral deviation, yaw rate, sideslip. Compare understeer vs oversteer vehicle. Run with ESC on oversteer vehicle.",
+    why: "ESC homologation uses the lane change test in Europe. Running it connects C9, C6, and the future ESC controller (H4) into one integrated scenario.",
+    steps: [
+      "Steering profile: δ(t) = A·sin(2πf·t) for one period then reversed. A=3°, f=0.5 Hz.",
+      "Integrate C9 (four-wheel model) at Vx=22 m/s (80 kph). State includes x, y, ψ for path.",
+      "Record: y(t), ψ(t), r(t), β(t). Plot x-y path.",
+      "Compare: understeer vs oversteer vehicle.",
+      "Run with ESC controller from H4 on oversteer vehicle: show stabilisation.",
+      "Metrics: max lateral deviation, max sideslip, yaw overshoot."
+    ],
+    deliverables: [
+      "Lane change simulation: result = lane_change(p, Vx, steering_profile)",
+      "x-y path plot for both vehicles",
+      "Time histories: yaw rate, sideslip, lateral acceleration",
+      "With/without ESC comparison on oversteer vehicle"
+    ],
+    matlab: [
+      "Extend state to [vy;r;x;y;psi]: add x_dot=Vx*cos(psi), y_dot=Vx*sin(psi), psi_dot=r",
+      "plot(x,y) with axis equal for path"
+    ]
+  },
+  "G4": {
+    concept: "Vary 8–10 chassis parameters ±20% from baseline. Record understeer gradient K and lateral acceleration limit ay_max. Sort by sensitivity. Tornado chart. Physical explanation for top 3.",
+    why: "Sensitivity studies appear explicitly in German MATLAB JD. This project ties D1–D5 and C7 into a structured analysis deliverable that looks like real engineering output.",
+    steps: [
+      "Parameters: a (CG fore-aft), h (CG height), Cαf, Cαr, μ_front, μ_rear, Kφf, Kφr, ARB_front, ARB_rear.",
+      "For each: vary from −20% to +20% of baseline. Compute K and ay_max from C7.",
+      "Record ΔK/K and Δay_max/ay_max for each parameter direction.",
+      "Sort by |ΔK| descending. Build tornado chart.",
+      "Write 3 paragraphs: one per most influential parameter."
+    ],
+    equations: [
+      "Sensitivity: ΔK/K per Δp/p",
+      "Tornado: horizontal bar, length = sensitivity magnitude"
+    ],
+    deliverables: [
+      "Sensitivity sweep across 10 parameters",
+      "Tornado chart for K",
+      "Tornado chart for ay_max",
+      "Physical interpretation paragraphs for top 3 parameters"
+    ],
+    matlab: [
+      "barh() for tornado chart",
+      "sort(...,'descend') for ranking",
+      "Table display with table() command"
+    ]
+  },
+
+  /* ---------- Pillar 3 (Tyre Dynamics) ---------- */
+  "A3": {
+    concept: "Pacejka Magic Formula 5.2: Fy = D·sin(C·atan(B·α − E·(B·α − atan(B·α)))). Fitted coefficients B, C, D, E have physical meaning (stiffness, shape, peak, curvature). Implement full Fy, Fx, Mz with load and camber dependence.",
+    why: "MF is industry-standard tyre model. Every OEM uses it. Understanding coefficient physical meaning is what separates a tyre modeller from someone who just calls a library.",
+    steps: [
+      "Formula: Fy = D·sin(C·atan(B·α − E·(B·α − atan(B·α)))). α in radians.",
+      "Coefficients: D = μ·Fz (peak), C = shape (1.3 typical), B = stiffness factor = Cα/(C·D), E = curvature (−1 to 1).",
+      "Load dependence: D = μ·Fz·(1 − dfz·(Fz/Fz0 − 1)), B similar with load sensitivity.",
+      "Camber: multiply by (1 − camber_stiffness·|γ|).",
+      "Aligning moment: Mz = −t·Fy with pneumatic trail t decaying with slip.",
+      "Longitudinal: same formula with κ instead of α and its own B_x, C_x, D_x, E_x.",
+      "Combined slip: weighting functions to blend Fx and Fy.",
+      "Plot Fy vs α for Fz = 1000, 2000, 4000, 8000 N. Show load sensitivity."
+    ],
+    equations: [
+      "Fy = D·sin(C·atan(B·α − E·(B·α − atan(B·α))))",
+      "D = μ·Fz,  B = Cα/(C·D)",
+      "Mz = −t(α)·Fy"
+    ],
+    deliverables: [
+      "Function [Fy, Fx, Mz] = pacejka_mf52(alpha, kappa, Fz, gamma, p)",
+      "Fy vs α curves for 4 load levels",
+      "Mz vs α curve showing pneumatic trail decay",
+      "Coefficient table with physical interpretation of each"
+    ],
+    matlab: [
+      "atand(), sind() carefully — or work in radians internally",
+      "vectorise over alpha array"
+    ]
+  },
+  "A5": {
+    concept: "Load sensitivity: peak friction coefficient μ_peak decreases as Fz increases. Fy_max/Fz decreases with load. This is why a heavy car has lower μ than a light one, and why load transfer hurts total grip.",
+    why: "The single most important second-order effect in tyre behaviour. Every handling balance prediction depends on getting load sensitivity right. Directly connects to D5.",
+    steps: [
+      "Measure or fit: μ(Fz) = μ0·(1 − k_load·(Fz/Fz0 − 1)). Typical k_load = 0.1–0.2.",
+      "Compute normalised peak: Fy_peak/Fz vs Fz. This is the load sensitivity curve.",
+      "Fit the curve with a linear or exponential form.",
+      "Show: doubling Fz from 2kN to 4kN reduces Fy_peak/Fz by ~15–20%.",
+      "Compute total axle grip with/without load transfer for the same axle total Fz.",
+      "Verify: total axle Fy is always lower with load transfer — this IS the mechanism of D5.",
+      "Plot: Fy_max vs Fz (linear if no sensitivity, concave with sensitivity)."
+    ],
+    equations: [
+      "μ(Fz) = μ0·(1 − k_load·(Fz/Fz0 − 1))",
+      "Fy_peak = μ(Fz)·Fz",
+      "ΔFy_loss > 0 for any ΔFz > 0 with k_load > 0"
+    ],
+    deliverables: [
+      "Function mu = load_sensitivity(Fz, p)",
+      "Plot: Fy_peak vs Fz, linear vs load-sensitive comparison",
+      "ΔFy capacity loss vs Fz asymmetry",
+      "Connection comment: how this makes D5's mechanism work"
+    ],
+    matlab: [
+      "Fz_vec = linspace(500, 8000, 50)",
+      "plot(Fz_vec, Fy_peak, 'DisplayName', 'with load sens')"
+    ]
+  },
+  "A6": {
+    concept: "Camber affects lateral force and generates aligning moment. Camber thrust = Fy per degree of γ. Combined with slip angle, camber adds or subtracts from lateral force. Aligning moment is the feedback the driver feels.",
+    why: "Camber tuning is a real setup parameter. Aligning moment is what makes steering feel alive. Both are required for high-fidelity handling simulation.",
+    steps: [
+      "Camber thrust: Fy_camber = Cγ·γ where Cγ ≈ 0.1–0.2 × Cα per degree.",
+      "Combined with slip: Fy = Fy_slip(α) + Cγ·γ·(1 − |α|/α_sat) for a simple model.",
+      "Aligning moment: Mz = Fy · t(α) where pneumatic trail t(α) decreases with slip.",
+      "At peak slip: trail drops to zero. Beyond peak: trail becomes negative (self-aligning reverses).",
+      "Plot: Fy vs γ for γ = −5°, 0°, +5° with slip angle on x-axis.",
+      "Plot: Mz vs α showing positive slope then negative beyond peak — the steering 'feel' curve.",
+      "Show: driver feels the tyre approaching the limit through trail reduction."
+    ],
+    equations: [
+      "Fy_camber = Cγ·γ",
+      "Mz = −t(α)·Fy",
+      "t(α) = t0·(1 − |α|/α_peak) for |α| < α_peak"
+    ],
+    deliverables: [
+      "Function [Fy, Mz] = tyre_camber_moment(alpha, gamma, Fz, p)",
+      "Fy vs α for 3 camber settings",
+      "Mz vs α curve with peak, zero-crossing, negative region annotated",
+      "Written: what the driver feels through trail reduction near the limit"
+    ],
+    matlab: [
+      "deg2rad for gamma and alpha",
+      "plot with legend for the 3 camber lines"
+    ]
+  },
+  "A7": {
+    concept: "Compare brush, MF5.2, and simple saturation models side by side. Show computational cost, accuracy, and parameter count. Choose appropriate model for each simulation context.",
+    why: "Every simulation has a fidelity budget. Knowing when a brush model is sufficient and when you need full MF is a key engineering judgment skill.",
+    steps: [
+      "Fit three models to the same reference data (or to MF as reference):",
+      "Model 1: brush — 3 parameters (Cα, μ, Fz).",
+      "Model 2: simple saturation — 2 parameters (Cα, α_sat).",
+      "Model 3: MF5.2 — 8+ parameters (B, C, D, E per direction).",
+      "Overlay all 3 on the same Fy vs α plot for Fz = 4000 N.",
+      "Compute fit error: RMS of (model − reference). Rank by accuracy.",
+      "Time each model: 1 million evaluations. Report microseconds per call.",
+      "Recommend: for QSS lap sim (brush is fine), for controller design (MF needed), for real-time HIL (brush or simplified MF)."
+    ],
+    equations: [
+      "RMSE = √(mean((model − reference)²))",
+      "Cost vs accuracy trade-off"
+    ],
+    deliverables: [
+      "3-model overlay plot at Fz=4000N",
+      "RMSE table: model × Fz level",
+      "Timing table: μs per evaluation, 1M eval total time",
+      "Recommendation paragraph: which model for which use case"
+    ],
+    matlab: [
+      "tic/toc for timing",
+      "Plot all three on one axis with distinct line styles"
+    ]
+  },
+  "A8": {
+    concept: "Fit tyre coefficients to measured or reference data using fmincon. Objective: minimising RMS error. Bounds and initial guesses matter. This is exactly what tyre suppliers do.",
+    why: "Tyre model fitting from measurement is a specialist skill. Directly applicable to any tyre-dependent role.",
+    steps: [
+      "Generate reference data: MF with known coefficients + 2% noise.",
+      "Cost function: J = Σ(Fy_model − Fy_ref)² over all (α, Fz) points.",
+      "Parameters to fit: B, C, D, E per load level (or global with load sensitivity).",
+      "Bounds: B ∈ [1, 20], C ∈ [1.0, 2.0], D ∈ [Fz·0.5, Fz·1.5], E ∈ [−2, 1].",
+      "Initial guess: B=10, C=1.4, D=Fz, E=0.",
+      "fmincon with optimoptions('Display','iter','MaxFunctionEvaluations',5000).",
+      "Report: fitted coefficients vs true coefficients. RMS error before/after.",
+      "Plot: data cloud + fitted surface over (α, Fz)."
+    ],
+    equations: [
+      "min J = Σ(Fy_model − Fy_ref)²  s.t. bounds",
+      "[B,C,D,E] = fmincon(@(p) cost(p, data), p0, [], [], [], [], lb, ub)"
+    ],
+    deliverables: [
+      "Cost function: J = cost_tyre_fit(coeffs, data)",
+      "fmincon script with bounds and options",
+      "Coefficient table: fitted vs true",
+      "Fitted surface plot over (α, Fz) with data overlay"
+    ],
+    matlab: [
+      "fmincon(@cost, p0, [], [], [], [], lb, ub, [], options)",
+      "meshgrid for data cloud, plot3 for surface"
+    ]
+  },
+
+  /* ---------- Pillar 2 (LTS MATLAB) ---------- */
+  "I1": {
+    concept: "Load track x,y coordinates. Compute arc length s, heading ψ, and curvature κ. Curvature is the primary input to the QSS solver. Noisy curvature causes artificial speed oscillations. Smooth carefully.",
+    why: "Poor curvature computation is the most common mistake in amateur lap-time simulators. Getting it right is prerequisite for all of Pillar 2.",
+    steps: [
+      "Arc length: ds_i = sqrt(dx²+dy²). s = cumsum(ds).",
+      "Heading: ψ_i = atan2(dy_i, dx_i). Unwrap ψ to remove discontinuities: ψ = unwrap(ψ).",
+      "Curvature: κ_i = dψ_i / ds_i using finite differences.",
+      "Smooth: κ_smooth = movmean(κ, window). Try window=10, 20, 50. Plot all three.",
+      "Closed-circuit: ensure κ and s are periodic. s[end] = track length.",
+      "Validation test: generate a perfect circle x=R·cos(θ), y=R·sin(θ). κ must equal 1/R everywhere.",
+      "Plot: track x-y with curvature colour-coded. Positive κ = left turn (blue). Negative = right (red)."
+    ],
+    equations: [
+      "ds = √(Δx²+Δy²)",
+      "κ = Δψ/ds",
+      "Check: circular track → κ = 1/R constant"
+    ],
+    deliverables: [
+      "Function track = preprocess_track(x, y, p)",
+      "Signed curvature vs arc length plot",
+      "Track x-y plot with corner locations",
+      "Circular track validation: κ error < 1e-6"
+    ],
+    matlab: [
+      "movmean(kappa, window) for smoothing",
+      "unwrap(psi) for heading continuity",
+      "cumsum(ds) for arc length"
+    ]
+  },
+  "I2": {
+    concept: "At each track point, solve for maximum speed: lateral acceleration = V²·κ must not exceed tyre lateral capacity. Capacity depends on Fz (which depends on ay, which depends on V) — iterate. Include aero downforce effect at speed.",
+    why: "Corner speed limits are the primary constraint in QSS simulation. Getting the iterative aero+LT solution right determines simulation accuracy.",
+    steps: [
+      "At each point with κ > 0: V_corner solves ay_available(V) = V²·κ.",
+      "ay_available depends on V (aero) and on ay itself (LT changes Fz). Implicit equation.",
+      "Iterate: start ay=0 → get Fz from D3 → get Fy_max → get ay_max → update ay. 3–5 iterations.",
+      "Or: fzero(@(V) required_ay(V,kappa) - available_ay(V,kappa,p), V_guess).",
+      "Cap: V_corner = min(computed, V_engine_max).",
+      "For κ ≈ 0 (straights): V_corner → Inf. Set to V_engine_max.",
+      "Plot: V_corner vs arc length, coloured by κ magnitude."
+    ],
+    equations: [
+      "V_corner = √(ay_max/κ)",
+      "Full: solve V s.t. ay_avail(V,κ,p) = V²·κ"
+    ],
+    deliverables: [
+      "Function V_corner = corner_speed_limit(kappa, p, V) with iterative LT+aero",
+      "V_corner plot along track",
+      "Comparison: with/without aero and LT — show magnitude of effect",
+      "Iteration count per point (verify convergence)"
+    ],
+    matlab: [
+      "fzero or Newton iteration (3 steps usually sufficient)",
+      "Vectorise over track points with arrayfun"
+    ]
+  },
+  "I3": {
+    concept: "At each track point and speed, compute available longitudinal acceleration from the GG boundary (C8) given the required ay. This is the force budget for acceleration and braking.",
+    why: "This connects the GG diagram (C8) to the forward-backward solver (I4). The speed-dependent force limit is what makes the simulator physics-based.",
+    steps: [
+      "At each point: V and ay=V²·κ are known. Compute ax_accel and ax_brake from GG boundary at this (ay, V).",
+      "GG boundary from C8: call gg_diagram() evaluated at the given ay to get the ±ax limits.",
+      "Add powertrain limit: ax_accel = min(GG_accel, F_drive(V)/m/(1+λ)) where λ accounts for rotating inertia.",
+      "Add drag: ax_net = ax_drive − 0.5·ρ·Cd·A·V²/m.",
+      "At high speed: drag reduces ax_accel significantly. Aero increases ax_brake.",
+      "Return ax_accel_available and ax_brake_available at each track point."
+    ],
+    equations: [
+      "ax_accel_net = min(GG_accel_limit, F_drive/m) − F_drag/m",
+      "ax_brake_max = |GG_brake_limit|"
+    ],
+    deliverables: [
+      "Function [ax_a, ax_b] = longitudinal_limits(V, ay, p)",
+      "Plot: ax_max along track — high on straights, reduced in corners",
+      "Aero effect: ax_brake increasing with V due to downforce",
+      "Powertrain limit overlay: where engine limits before GG"
+    ],
+    matlab: [
+      "Vectorised: compute over entire track in one call",
+      "Minimum of GG limit and powertrain limit"
+    ]
+  },
+  "I4": {
+    concept: "Core QSS algorithm: forward pass (accelerate from current V limited by ax_accel and V_corner), backward pass (brake from future V limited by ax_brake and V_corner), take minimum. Iterate for closed circuit until start/end V converge.",
+    why: "This IS the lap-time simulator. The main deliverable of Pillar 2.",
+    steps: [
+      "Forward pass: V_fwd[1]=V_start. For i=2..N: V_fwd[i]²=V_fwd[i-1]²+2·ax_accel[i-1]·ds. Clip to V_corner[i].",
+      "Backward pass: V_bwd[N]=V_end. For i=N-1..1: V_bwd[i]²=V_bwd[i+1]²+2·ax_brake[i]·ds. Clip to V_corner[i].",
+      "Feasible: V[i] = min(V_corner[i], V_fwd[i], V_bwd[i]).",
+      "Convergence: V[end] becomes V_start for next iteration. Converges in 2–5 iterations.",
+      "Protect: V must never be ≤ 0. Set minimum V = 0.5 m/s.",
+      "Time integration: dt[i] = 2·ds/(V[i]+V[i+1]). Lap time = sum(dt).",
+      "Result structure: result.speed, result.time, result.distance, result.lapTime, result.metadata."
+    ],
+    equations: [
+      "Forward: V²[i+1]=V²[i]+2·ax_accel[i]·Δs",
+      "Backward: V²[i]=V²[i+1]+2·ax_brake[i]·Δs",
+      "V_feasible=min(V_corner,V_fwd,V_bwd)",
+      "Δt=2Δs/(V[i]+V[i+1])"
+    ],
+    deliverables: [
+      "Function result = qss_solver(track, p)",
+      "Speed profile plot: V_corner, V_fwd, V_bwd, V_feasible overlaid",
+      "Convergence: start/end V difference vs iteration",
+      "Lap time with documented metadata"
+    ],
+    matlab: [
+      "Pre-allocate arrays: V_fwd = zeros(N,1)",
+      "while abs(V_end - V_start) > 1e-4 for convergence",
+      "cumsum(dt) for cumulative lap time"
+    ]
+  },
+  "I5": {
+    concept: "Structured parameter sweep on the working lap-time simulator. Vary one parameter at a time ±10%. Record lap time change. Tornado chart of sensitivity. 2D sweep for interaction plot.",
+    why: "Lap time sensitivity is the core output of motorsport VD. Toyota JD explicitly mentions optimization and performance assessment.",
+    steps: [
+      "Parameters: m, Cαf, Cαr, μ, ClA, CdA, h, Kφf/Kφr split, a/L (CG position).",
+      "For each: ±10% from baseline. Run qss_solver. Record lap time.",
+      "Compute sensitivity = (T_plus − T_minus) / (0.2 × T_baseline) in s per 10%.",
+      "Sort descending. Tornado chart: horizontal bars, red=lap time increase, blue=decrease.",
+      "2D sweep: mass vs downforce. 10×10 grid. Contour plot of lap time. Show interaction.",
+      "Physical insight paragraph for top 3 most sensitive parameters."
+    ],
+    deliverables: [
+      "Sweep function: results = laptime_sensitivity(param, range_pct, p, track)",
+      "Tornado chart: sensitivity ranked",
+      "2D contour: lap time vs mass vs ClA",
+      "Insight paragraph: top 3 parameters and physical mechanism"
+    ],
+    matlab: [
+      "setfield or manual struct copy for parameter modification",
+      "barh(sens_sorted, params_sorted) for tornado",
+      "contourf for 2D plot"
+    ]
+  },
+  "I6": {
+    concept: "Point-mass dynamic lap-time: integrate equations of motion along the track, using the GG boundary as control constraint. Captures transient effects missed by QSS. Compare lap time and speed profile.",
+    why: "Toyota JD explicitly mentions 'quasistatic and dynamic lap-time calculation methods.' Demonstrating you know both and understand the difference is a direct match.",
+    steps: [
+      "State: V (speed), x (arc length). Choose ax at each step: max_available from I3 if V < V_corner, max_brake if approaching corner.",
+      "Integrate: V[i+1]=V[i]+ax[i]·dt. x[i+1]=x[i]+V[i]·dt.",
+      "Run for multiple laps until lap time converges.",
+      "Compare speed profile with QSS: point-mass is smoother at transitions.",
+      "Lap time difference: typically QSS is within 0.5–2% for simple tracks.",
+      "Identify where they diverge most: tight chicanes, long corners with speed build-up in mid-corner."
+    ],
+    deliverables: [
+      "Dynamic integration function alongside QSS solver",
+      "Speed profile comparison: QSS vs dynamic",
+      "Lap time difference table",
+      "Analysis: when does QSS overestimate performance and why"
+    ],
+    matlab: [
+      "Time-domain Euler integration: simple and robust for this application",
+      "Run 3 laps, use 3rd lap time (after convergence)"
+    ]
+  },
+  "J1": {
+    concept: "Export MATLAB QSS result to JSON. Write Python script to load it and reproduce the speed profile plot with matplotlib. Establishes Python data pipeline and proves interoperability.",
+    why: "Python is listed in every JD alongside MATLAB. Interoperability is a practical daily-work skill.",
+    steps: [
+      "MATLAB: json_str = jsonencode(result_simple_struct); fwrite(fid, json_str).",
+      "Python: import json. data = json.load(f). Extract s and V.",
+      "matplotlib: plt.plot(data['distance'], data['speed']). Labels, title, grid.",
+      "Match appearance to MATLAB version for comparison.",
+      "Add: peak speed annotation, lap time in figure title, corner markers from curvature."
+    ],
+    deliverables: [
+      "MATLAB export function: export_result_json(result, filepath)",
+      "Python script: load_and_plot.py",
+      "Side-by-side screenshots: MATLAB and Python plots of same data"
+    ],
+    matlab: [
+      "jsonencode(struct_result) — base MATLAB",
+      "Python: import json, numpy as np, matplotlib.pyplot as plt"
+    ]
+  },
+  "J2": {
+    concept: "Python automation: load pre-computed MATLAB sensitivity sweep results (from I5) exported as JSON. Build pandas DataFrame. Sort. Plot tornado chart with matplotlib.",
+    why: "Automation and batch processing are listed in Toyota JD and German MATLAB JD. Python-based automation of MATLAB output is exactly this skill.",
+    steps: [
+      "MATLAB pre-step: export I5 sweep as JSON array of {param, lap_base, lap_plus, lap_minus}.",
+      "Python: json.load(), build DataFrame with columns: param, sensitivity.",
+      "Sort by absolute sensitivity. horizontal bar chart.",
+      "Formatting: red bars for positive, blue for negative.",
+      "Save figure as PNG with 300 dpi."
+    ],
+    deliverables: [
+      "Python script: sensitivity_tornado.py",
+      "Tornado chart figure",
+      "requirements.txt: pandas, matplotlib, numpy"
+    ],
+    matlab: [
+      "Export: struct array with fields param_name, sens_value → jsonencode"
+    ]
+  },
+  "J3": {
+    concept: "Python post-processing pipeline: load any time-history result, compute derived channels, extract KPIs, write summary CSV. Reusable pattern for future real measurement data.",
+    why: "KPI extraction from time history data is daily work in every VD role. Building this pipeline now prepares you for working with real test data.",
+    steps: [
+      "Load: V(t), r(t), delta(t), ax(t) from JSON or CSV.",
+      "Compute: ay = V·r. Grip = sqrt(ax²+ay²)/g.",
+      "KPIs: peak_ay, peak_ax, peak_grip, rms_grip, V_max, V_min, lap_time.",
+      "Write to CSV: one row per simulation run. pandas.DataFrame.to_csv().",
+      "Print formatted table to console."
+    ],
+    deliverables: [
+      "Python script: extract_kpis.py",
+      "kpi_summary.csv with headers",
+      "Console table output"
+    ],
+    matlab: [
+      "Python: pandas.DataFrame({'param': ..., 'kpi': ...}).to_csv()"
+    ]
+  },
+  "J4": {
+    concept: "Compare simulation result against reference (OpenLAP output or analytical solution). Compute RMS error, peak error, normalised error. Plot overlay with error band.",
+    why: "Correlation of simulation to reference is listed in Toyota JD and German MATLAB JD. Establishes the pattern for all future validation work.",
+    steps: [
+      "Load sim result and reference (OpenLAP CSV, or analytical oval solution).",
+      "Resample both to common arc length grid using numpy.interp.",
+      "Compute: error = sim − ref. RMS = sqrt(mean(error²)). Peak = max(abs(error)).",
+      "Plot: overlay sim and ref speed profiles. Error on second panel.",
+      "Table: RMS, peak, lap time difference, peak speed difference.",
+      "Explain each significant discrepancy in a comment."
+    ],
+    deliverables: [
+      "Python script: correlate_sim_reference.py",
+      "Correlation plot: overlay + error panel",
+      "Validation table matching roadmap section 13 format",
+      "Discrepancy explanation for any error > 2%"
+    ],
+    matlab: [
+      "numpy.interp for resampling",
+      "numpy.sqrt(numpy.mean(error**2)) for RMS"
+    ]
+  },
+  "S1": {
+    concept: "Longitudinal vehicle dynamics as a Simulink subsystem. Inputs: T_drive, T_brake, F_aero_drag. Outputs: Vx, s, ax. Same physics as B1/B2 but implemented as a block diagram.",
+    why: "Foundation for all MBD work. Every controller in Pillar 4 connects to this plant.",
+    steps: [
+      "Create masked Subsystem. Inports: T_drive, T_brake, F_aero_drag. Outports: Vx, s, ax.",
+      "Sum forces: F_net = T_drive/R − T_brake/R − F_aero_drag − Crr·m·g.",
+      "Integrator for Vx: ax = F_net/m → Integrator → Vx. Initial condition: Vx0.",
+      "Integrator for s: Vx → Integrator → s.",
+      "MATLAB Function block for tyre Fx: wrap brush_longitudinal from A2.",
+      "Wheel block: T_net → (J)⁻¹ → omega_dot → Integrator → omega → slip ratio → tyre Fx.",
+      "Test: constant T_drive step. Verify Vx ramps. Compare with B1 MATLAB result."
+    ],
+    equations: [
+      "m·a = T_drive/R − T_brake/R − F_drag − F_roll",
+      "J·ω̇ = T_net − F_tire·R"
+    ],
+    deliverables: [
+      "Simulink subsystem: LongitudinalPlant.slx",
+      "Test harness: constant torque step, Vx plot",
+      "MATLAB vs Simulink comparison: Vx(t) overlay",
+      "Port descriptions and signal units in block mask"
+    ],
+    matlab: [
+      "MATLAB Function block for tyre Fx",
+      "Model workspace for parameters: set via MATLAB script before sim()"
+    ]
+  },
+  "S2": {
+    concept: "Lateral and yaw dynamics as a Simulink subsystem. Inputs: Fyf, Fyr, delta, Vx. Outputs: vy, r, ay. Implements the bicycle model as a block.",
+    why: "Separation from S1 mirrors real ECU architecture.",
+    steps: [
+      "Inputs: Fyf, Fyr, delta, Vx. Outputs: vy, r, ay.",
+      "MATLAB Function block: function [vy_dot, r_dot] = lat_dyn(vy, r, Fyf, Fyr, Vx, p).",
+      "Two integrators for vy and r.",
+      "ay output: MATLAB Function: ay = vy_dot + Vx*r.",
+      "Test: step steer. Verify steady-state r matches C2 analytical.",
+      "Connect S1 → S2 via Vx signal.",
+      "MIL comparison: same step-steer in MATLAB (C4) and Simulink (S2)."
+    ],
+    deliverables: [
+      "Subsystem: LateralPlant.slx",
+      "Step-steer response: r(t) and beta(t)",
+      "Comparison: Simulink step-steer vs C4 MATLAB result"
+    ],
+    matlab: [
+      "MATLAB Function block: function [vy_dot, r_dot] = lateral_dyn(vy, r, Fyf, Fyr, Vx, m, Iz, a, b)"
+    ]
+  },
+  "S3": {
+    concept: "Wrap MATLAB tyre force functions (A1/A2 brush or A3 MF) inside a Simulink MATLAB Function block. This block is the bridge between your tested MATLAB physics code and the Simulink block diagram.",
+    steps: [
+      "MATLAB Function block inputs: alpha (rad), Fz (N), optional kappa. Output: Fy (N).",
+      "Call: Fy = brush_lateral(alpha, Fz, Caf, mu_y).",
+      "Declare function as extrinsic if it cannot be codegen-compatible.",
+      "Test: constant alpha sweep. Verify matches A1 MATLAB output.",
+      "Combined slip version: [Fx,Fy] = combined_tyre(kappa, alpha, Fz, p).",
+      "Verify at alpha=0: Fy=0. At kappa=0: Fx=0."
+    ],
+    deliverables: [
+      "Simulink block: TyreForce.slx",
+      "Fy vs alpha: Simulink matches A1 MATLAB plot",
+      "Combined slip block: [Fx,Fy] from [kappa, alpha, Fz]"
+    ],
+    matlab: [
+      "coder.extrinsic('brush_lateral') in MATLAB Function block if needed"
+    ]
+  },
+  "S4": {
+    concept: "Aerodynamic forces as Simulink subsystem. Input: Vx. Outputs: F_drag, F_downforce, aero balance split. Enable/disable switch. Speed-squared dependency.",
+    steps: [
+      "F_drag = 0.5·rho·CdA·Vx².",
+      "F_down = 0.5·rho·ClA·Vx² (positive = downward).",
+      "Aero balance: front/rear split from application point x_aero.",
+      "Enable flag: multiply all outputs by p.aero.enabled (0 or 1) — Switch block.",
+      "Test at Vx=50 m/s: verify F_drag ≈ 1530 N and F_down ≈ 4590 N for typical ClA=3.0."
+    ],
+    deliverables: [
+      "Subsystem: AeroForces.slx with enable switch",
+      "Force vs speed plot 0–80 m/s",
+      "Enabled vs disabled comparison in full plant"
+    ],
+    matlab: [
+      "Switch block or multiply-by-flag approach",
+      "Gain blocks: 0.5*rho*CdA and 0.5*rho*ClA"
+    ]
+  },
+  "S5": {
+    concept: "Simple electric motor or engine as a Simulink subsystem. Throttle demand [0,1] → torque map (1D lookup table) → gear/final drive → wheel torque.",
+    steps: [
+      "Torque map: T_motor = f(omega_motor).",
+      "1D Lookup Table block: breakpoints = omega_motor, table data = T_max(omega).",
+      "Scale by throttle: T_motor = T_map(omega) × throttle.",
+      "Drivetrain: T_wheel = T_motor × gear_ratio × eta.",
+      "Rate Limiter on throttle input.",
+      "Test: throttle step. Verify T_wheel = T_map(0)×ratio×eta at standstill."
+    ],
+    deliverables: [
+      "Subsystem: PowertrainSimple.slx",
+      "Torque-speed curve plot",
+      "Throttle step response: T_wheel vs time"
+    ],
+    matlab: [
+      "1-D Lookup Table block in Simulink Library Browser",
+      "Rate Limiter block for throttle"
+    ]
+  },
+  "S6": {
+    concept: "Integrate S1–S5 into a complete vehicle plant. Bus Creator for structured signal passing. Signal logging. Run a scenario and compare with MATLAB QSS result.",
+    steps: [
+      "Top level: Driver inputs → Powertrain (S5) → Longitudinal (S1) → Lateral (S2) with Tyre (S3) and Aero (S4).",
+      "Bus Creator: bundle [Vx,vy,r,ax,ay] into vehicle state bus.",
+      "Signal logging: mark all bus signals for logging.",
+      "Scenario: accelerate on straight, brake, steer at 60 kph. 30s simulation.",
+      "Compare with equivalent MATLAB script: must match within 1e-4.",
+      "Architecture diagram: screenshot of top-level Simulink model with annotated connections."
+    ],
+    deliverables: [
+      "Integrated model: FullVehiclePlant.slx",
+      "Architecture diagram with annotated signal flows",
+      "Signal log: all states accessible post-simulation",
+      "MATLAB vs Simulink overlay: Vx(t), r(t)"
+    ],
+    matlab: [
+      "out = sim('FullVehiclePlant'); out.logsout for logged signals"
+    ]
+  },
+  "S7": {
+    concept: "MIL baseline comparison: same step-steer scenario run in MATLAB (C4/C6) and Simulink (S6). Same parameters, same solver type. Residuals within solver tolerance.",
+    why: "MIL is the first gate in formal MBD validation. A passed MIL test with documented evidence is exactly what controls JDs expect as portfolio evidence.",
+    steps: [
+      "Test scenario: step steer 3° at 25 m/s, 10 s duration.",
+      "MATLAB: run C4 bicycle model. Store results_MATLAB.",
+      "Simulink: run S6 with same parameters and inputs. Store results_Simulink.",
+      "Interpolate to common time grid. Compute RMS and peak error per channel.",
+      "Pass criterion: RMS < 1e-3 for all channels.",
+      "Document: solver types, tolerances, timestep. One-page MIL report."
+    ],
+    deliverables: [
+      "MIL comparison script: compare_MATLAB_Simulink.m",
+      "Overlay plot: r(t) and beta(t) from both",
+      "Error table: all channels with RMS and peak",
+      "One-page MIL report"
+    ],
+    matlab: [
+      "interp1 for common time grid",
+      "rms(error) and max(abs(error)) for metrics",
+      "MATLAB publish() to generate report PDF"
+    ]
+  },
+
+  /* ---------- Pillar 4 (Controls & MPC) ---------- */
+  "B4": {
+    concept: "ABS prevents lockup by modulating brake torque to keep slip ratio near the peak of the Fx(κ) curve. Implement a proportional slip controller: measure κ, compare to κ_target ≈ 0.15, reduce brake torque if κ exceeds target.",
+    why: "ABS is the first bullet in the controls JD. This project is the most direct demonstration of 'develop and tune vehicle dynamics control algorithms.'",
+    steps: [
+      "Start from B3 high-brake-torque lockup scenario.",
+      "Add controller: at each discrete timestep (dt=0.01s), compute κ_error = κ − κ_target.",
+      "Proportional: T_brake = T_brake − Kp·κ_error. Clamp T_brake to [0, T_max].",
+      "Compare: open-loop, bang-bang, proportional slip.",
+      "Metrics: stopping distance, lateral Fy capacity retained, oscillation amplitude.",
+      "Tune Kp: too low → no lockup prevention. Too high → wheel speed oscillation.",
+      "Discrete controller in a for-loop at 0.01s — simulate embedded behaviour.",
+      "Plot: Vx, omega, κ, T_brake, deceleration for all 3 controllers."
+    ],
+    equations: [
+      "κ_error = κ − κ_target",
+      "T_brake(k) = T_brake(k−1) − Kp·κ_error",
+      "Fy_avail = Fy_max·√(1 − (Fx/Fx_max)²)"
+    ],
+    deliverables: [
+      "Controller: T_brake = abs_controller(kappa, kappa_target, T_prev, p)",
+      "3-strategy comparison plot: stopping distance, slip history, deceleration",
+      "Retained Fy capacity during ABS vs without",
+      "Tuning note: chosen Kp and sensitivity analysis"
+    ],
+    matlab: [
+      "Discrete Euler loop: Vx(k+1) = Vx(k) + (Fx/m)*dt",
+      "Anti-saturation: T_brake = max(0, min(T_max, T_brake))"
+    ]
+  },
+  "B5": {
+    concept: "TCS prevents wheel spin during drive by limiting torque if slip ratio exceeds a target. Mirror of ABS — same plant, same controller structure, opposite torque direction.",
+    why: "TCS is in the controls JD. Implementing it directly after ABS reinforces the architectural pattern.",
+    steps: [
+      "Use B2 drive model. Apply high T_drive causing wheel spin on μ=0.4 surface.",
+      "Controller: if κ > κ_target_drive (e.g. 0.10), reduce T_drive by Kp·(κ − κ_target).",
+      "TCS activates only when κ > κ_target: one-sided control.",
+      "Compare 0–60 kph on (a) μ=1.0 tarmac, (b) μ=0.4 wet.",
+      "Show: without TCS on low-mu, wheel spins, actual vehicle acceleration is poor despite high torque.",
+      "Plot: Vx, omega, κ, T_drive vs time for with/without TCS on both surfaces."
+    ],
+    equations: [
+      "T_drive_cmd = T_request − Kp·max(κ − κ_target, 0)"
+    ],
+    deliverables: [
+      "Controller: T = tcs_controller(kappa, T_request, p)",
+      "Side-by-side: with/without TCS for 2 mu values",
+      "0–60 kph time table for all 4 combinations",
+      "Written: ABS vs TCS structural comparison"
+    ],
+    matlab: [
+      "max(kappa - kappa_target, 0) for one-sided activation",
+      "Identical loop structure to B4 — factor out common code"
+    ]
+  },
+  "B6": {
+    concept: "Launch control maximises acceleration from standstill. Combines a torque ramp rate limiter with a slip threshold. As the car accelerates, longitudinal load transfer shifts weight rearward — update Fz during the simulation using D2.",
+    why: "Launch control is in the controls JD. Connects D2, B5, and B2 into a real scenario.",
+    steps: [
+      "Define 3 strategies: (a) full torque step, (b) ramp only, (c) ramp + slip limit.",
+      "Torque ramp: T_drive(t) = min(T_ramp·t, T_max).",
+      "Slip limit: if κ > κ_limit, stop increasing T and apply TCS reduction.",
+      "Dynamic rear load: Fzr(t) = Fzr_static + m·a(t)·h/L from D2.",
+      "Simulate 0 to 100 kph for all 3 strategies on μ=1.0 and μ=0.5.",
+      "Compare 0–100 time. Plot Vx, omega, κ, T_drive, Fzr vs time.",
+      "Show: ramp+slip (c) best on low-mu. On high-mu, (a) full torque is acceptable."
+    ],
+    equations: [
+      "T_drive(t) = min(T_ramp·t, T_max)",
+      "T_drive = T_ramp − Kp·max(κ − κ_limit, 0)",
+      "Fzr(t) = Fzr_static + m·a(t)·h/L"
+    ],
+    deliverables: [
+      "3-strategy × 2-mu comparison figure",
+      "0–100 kph time table",
+      "Dynamic Fzr plot: load evolution during launch",
+      "Explanation: why optimal slip ≠ 0"
+    ],
+    matlab: [
+      "cumtrapz for 0–100 time calculation",
+      "Update Fz in the loop from current acceleration"
+    ]
+  },
+  "C10": {
+    concept: "Torque vectoring distributes drive torque asymmetrically between left/right rear wheels to generate a corrective yaw moment. Proportional yaw-rate feedback. Redistributes existing torque — does not increase total.",
+    why: "Torque vectoring is in the controls JD. Performance VD differentiator — connects physics of yaw moment (C9) to a control architecture in a drive scenario.",
+    steps: [
+      "Use four-wheel model (C9). Add individual rear torques: T_RL and T_RR.",
+      "Yaw moment: ΔMz = (T_RR−T_RL)·tr / (2·R).",
+      "Reference r_ref from linear bicycle model.",
+      "Controller: ΔT = Kp·(r_ref−r). T_RR = T_base/2+ΔT/2. T_RL = T_base/2−ΔT/2.",
+      "Constraint: T_RL ≥ 0, T_RR ≥ 0.",
+      "Compare: open diff, active TV. Simulate corner exit at 80% grip.",
+      "Show: TV reduces understeer, improves yaw rate tracking, enables faster corner exit."
+    ],
+    equations: [
+      "ΔMz = (T_RR−T_RL)·tr/(2R)",
+      "r_error = r_ref−r_actual",
+      "T_RL = T_base/2−ΔT/2,  T_RR = T_base/2+ΔT/2"
+    ],
+    deliverables: [
+      "TV controller integrated into C9 four-wheel model",
+      "Comparison: no TV vs active TV in corner exit",
+      "Yaw rate tracking: reference vs actual",
+      "Individual rear wheel torque time histories"
+    ],
+    matlab: [
+      "T_RL = max(0, T_base/2 - DeltaT/2)",
+      "Discrete loop at 0.01s"
+    ]
+  },
+  "H1": {
+    concept: "Write bicycle model in standard A,B,C,D form. Compute controllability matrix Co = [B|AB] and observability matrix Ob = [C;CA]. Check full rank. Determine whether sideslip can be reconstructed from yaw rate and lateral acceleration measurements alone.",
+    why: "State-space formulation and observability analysis are prerequisites for observer design (H2,H3). Listed explicitly in controls JD.",
+    steps: [
+      "A and B from C1. Output: yaw rate → C=[0 1], D=0. Or lateral acceleration → C=[Vx 0]/m·... derive carefully.",
+      "Controllability: Co = [B, A·B]. rank(Co) must equal 2 for full controllability.",
+      "Observability with C=[0 1] (yaw rate only): Ob=[C;CA]. Check rank.",
+      "Observability with C=[0 1; Vx 0] (yaw rate + lateral acc): check rank.",
+      "Physical interpretation: rank(Ob)=2 means we can recover the full state.",
+      "Print rank of Co and Ob. State conclusions in plain language.",
+      "Compute condition number of Ob: large condition number means state is nearly unobservable."
+    ],
+    equations: [
+      "Co = [B | AB]",
+      "Ob = [C; CA]",
+      "Full rank iff det≠0 iff rank = n = 2"
+    ],
+    deliverables: [
+      "A, B, C, D matrices for concrete vehicle at 30 m/s",
+      "Controllability check with physical interpretation",
+      "Observability check for 3 output configurations",
+      "Written: can sideslip be estimated from yaw rate + lateral acceleration?"
+    ],
+    matlab: [
+      "rank(ctrb(A,B)) — ctrb in base MATLAB",
+      "rank(obsv(A,C)) — obsv in base MATLAB",
+      "cond(obsv(A,C)) for conditioning"
+    ]
+  },
+  "H2": {
+    concept: "Luenberger observer reconstructs unmeasurable sideslip from measurable outputs (yaw rate, lateral acceleration). Observer poles placed 3–5× faster than plant poles. Design using pole placement. Validate with noisy measurements.",
+    why: "Sideslip estimation is the key signal for ESC and TV. Explicitly in controls JD. Most production ESC systems use an observer like this.",
+    steps: [
+      "Plant: bicycle A, B, C (output=[r; ay]), D=0.",
+      "Observer: X̂_dot = A·X̂ + B·δ + L·(y − C·X̂). Error dynamics: ė = (A−LC)·e.",
+      "Place observer poles at 3× plant pole magnitudes: lambda_obs = 3×lambda_plant.",
+      "L = place(A', C', obs_poles)' — note the transpose for observer form.",
+      "Simulate: true bicycle model generates y = C·X + noise (σ=0.01 rad/s on yaw rate).",
+      "Observer integrates using noisy y. Compare X̂ vs X_true.",
+      "Wrong IC: start observer at vy=0.5 m/s offset. Show convergence to true state.",
+      "Plot: true β vs estimated β. Error vs time."
+    ],
+    equations: [
+      "X̂̇ = AX̂ + Bδ + L(y − CX̂)",
+      "ė = (A−LC)e  →  stable if eigenvalues of (A−LC) < 0",
+      "L = place(A', C', desired_poles)'"
+    ],
+    deliverables: [
+      "Observer function: Xhat = luenberger_step(Xhat, y, delta, L, A, B, C, dt)",
+      "True vs estimated sideslip for step-steer with noise",
+      "Estimation error vs time for 3 observer gain levels",
+      "Table: observer poles vs plant poles vs convergence time"
+    ],
+    matlab: [
+      "place(A', C', poles)' for observer gain (note transposition)",
+      "Discrete Euler for observer integration"
+    ]
+  },
+  "H3": {
+    concept: "Kalman filter: optimal estimator for linear Gaussian systems. Computes time-varying gain K(t) minimising estimation error covariance. Steady-state Kalman = optimal Luenberger. Tuned via process noise Q and measurement noise R matrices.",
+    why: "Kalman filtering is in controls JD and is standard in ABS/ESC ECUs for state estimation.",
+    steps: [
+      "Discretise bicycle model: Ad = expm(A·dt), Bd = A\\(Ad−I)·B (ZOH).",
+      "Define Q (process noise covariance) and R (measurement noise covariance).",
+      "Predict step: X̂⁻=Ad·X̂, P⁻=Ad·P·Ad'+Q.",
+      "Update step: K=P⁻·C'·(C·P⁻·C'+R)⁻¹. X̂=X̂⁻+K·(y−C·X̂⁻). P=(I−KC)·P⁻.",
+      "Run with noisy measurements from true bicycle model.",
+      "Compare KF vs Luenberger (H2) for same noise level: KF should have lower RMS error.",
+      "Tune Q/R: large Q → filter trusts measurements more. Large R → trusts model more.",
+      "Plot: K(t) vs time showing convergence to steady-state gain."
+    ],
+    equations: [
+      "Predict: X̂⁻=Ad·X̂, P⁻=Ad·P·Ad'+Q",
+      "Gain: K=P⁻C'(CP⁻C'+R)⁻¹",
+      "Update: X̂=X̂⁻+K(y−CX̂⁻), P=(I−KC)P⁻"
+    ],
+    deliverables: [
+      "Discrete Kalman filter function for bicycle model",
+      "True vs KF-estimated sideslip for 2 noise levels",
+      "K(t) convergence plot",
+      "KF vs Luenberger RMS error comparison table"
+    ],
+    matlab: [
+      "expm(A*dt) for discretisation",
+      "No toolbox needed — implement loop directly",
+      "P_init = eye(2)·0.1 for initial covariance"
+    ]
+  },
+  "H4": {
+    concept: "ESC detects yaw rate deviation from a reference (from linear bicycle model) and applies corrective yaw moment via differential braking. Connects bicycle model (C1), observer (H2), slip controller (B4), and four-wheel model (C9).",
+    why: "ESC is in every controls JD and is the most important active safety system. This project integrates everything from Pillars 1 and 4 into one cohesive demonstration.",
+    steps: [
+      "Reference: r_ref = Vx·δ / (L·(1+K·Vx²)) from C2.",
+      "Error: Δr = r_actual − r_ref. Activate if |Δr| > 2 deg/s threshold.",
+      "Required yaw moment: ΔMz = −Iz·Kp·Δr.",
+      "Choose wheel: oversteer (rear slides) → brake outside front wheel for restoring moment.",
+      "Force: ΔFx = 2·ΔMz / tf. Apply via ABS controller (B4) on that wheel.",
+      "Simulate: step-steer on μ=0.5 with oversteer vehicle. Without ESC → spin. With ESC → stabilisation.",
+      "Plot: r_ref, r_actual, Δr, ESC activation flag, corrective brake force, vehicle path (x,y)."
+    ],
+    equations: [
+      "r_ref = Vx·δ/(L(1+K·Vx²))",
+      "ΔMz = −Kp·Δr·Iz",
+      "ΔFx = 2·ΔMz/tf"
+    ],
+    deliverables: [
+      "ESC controller: [T_FL,T_FR,T_RL,T_RR] = esc_controller(r, r_ref, Vx, p)",
+      "Oversteer event with and without ESC",
+      "Yaw rate and sideslip comparison plots",
+      "x-y path showing stabilisation"
+    ],
+    matlab: [
+      "Combine C9 plant + H4 ESC + B4 ABS in one 0.01s discrete loop",
+      "ESC flag = abs(delta_r) > threshold"
+    ]
+  },
+  "H5": {
+    concept: "Formally tune the ABS PID controller (B4) using Ziegler-Nichols method. Identify plant as first-order-plus-dead-time. Set PID gains from ZN rules. Analyse sensitivity: how performance degrades with ±30% mu change.",
+    why: "PID tuning is in every controls JD. Demonstrating a formal tuning method (not just manual adjustment) shows engineering rigour.",
+    steps: [
+      "Plant identification: apply step torque to B4 plant, fit first-order response G(s) ≈ K/(τs+1)·e^{-Ls}.",
+      "Ziegler-Nichols: increase Kp until sustained oscillation → K_u, T_u. Set Kp=0.6K_u, Ti=0.5T_u, Td=0.125T_u.",
+      "Implement discrete PID with anti-windup.",
+      "Closed-loop step response: measure rise time, overshoot, settling time.",
+      "Robustness: change mu by ±30%. Show degradation in metrics.",
+      "Compare 3 tuning methods: manual (B4), ZN, conservative (0.5×ZN gains).",
+      "Recommendation: which is most robust and why."
+    ],
+    equations: [
+      "ZN: Kp=0.6Ku, Ti=0.5Tu, Td=0.125Tu",
+      "Discrete PID: u(k)=Kp·e+Ki·dt·Σe+Kd·(e(k)−e(k-1))/dt"
+    ],
+    deliverables: [
+      "Plant step response and identified G(s) parameters",
+      "ZN gain calculation with derivation",
+      "Closed-loop step response: 3 tuning methods",
+      "Robustness table: ±30% mu × metrics × tuning method"
+    ],
+    matlab: [
+      "tic/toc or manual ZN identification from discrete simulation",
+      "Anti-windup: I_term = min(max(I_term + Ki*e*dt, -I_max), I_max)"
+    ]
+  },
+  "S8": {
+    concept: "Port the MATLAB ABS controller (B4) into a Simulink closed-loop model. Multi-rate: controller at 100 Hz, plant at 1 kHz. Rate Transition blocks. MIL comparison with B4 result.",
+    why: "Simulink implementation of a validated MATLAB controller is the core MBD workflow. Multi-rate design mirrors embedded reality.",
+    steps: [
+      "Test harness: From Workspace (initial Vx) → Longitudinal plant (S1) + Tyre (S3) → ABS Controller → back to plant.",
+      "ABS Controller: MATLAB Function block, sample time = 0.01s (100 Hz). Same logic as B4.",
+      "Plant: continuous or 0.001s fixed-step.",
+      "Rate Transition blocks between 1ms plant and 10ms controller outputs.",
+      "MIL: export B4 MATLAB result. Run Simulink. Overlay: wheel speed, Vx, κ, T_brake.",
+      "Pass: max(|error_Vx|) < 0.1 m/s over full braking event."
+    ],
+    deliverables: [
+      "ABS_Closed_Loop.slx",
+      "MIL comparison plot: MATLAB vs Simulink",
+      "Multi-rate rationale documentation",
+      "Pass/fail verdict with numeric evidence"
+    ],
+    matlab: [
+      "Rate Transition block",
+      "MATLAB Function sample time: set to 0.01 in block parameters"
+    ]
+  },
+  "S9": {
+    concept: "Port TCS controller (B5) to Simulink. Mirror of S8 structure but for drive torque. Connect to powertrain subsystem S5.",
+    steps: [
+      "TCS Controller MATLAB Function: inputs = kappa, kappa_target, T_request. Output = T_command.",
+      "Connect: Throttle input → Powertrain (S5) → TCS → Longitudinal plant (S1).",
+      "Simulate wheel spin on low mu. TCS activates, limits torque.",
+      "MIL comparison with B5."
+    ],
+    deliverables: [
+      "TCS_Closed_Loop.slx",
+      "With vs without TCS: wheel speed, Vx on low mu",
+      "MIL comparison with B5"
+    ],
+    matlab: [
+      "Same architecture as S8 — reuse harness structure"
+    ]
+  },
+  "S10": {
+    concept: "ESC yaw rate controller (H4) in Simulink. Full closed loop: lateral plant (S2) + tyre (S3) + ESC controller (H4 logic). Reference model inside the ESC block. ABS for corrective braking wheel.",
+    steps: [
+      "ESC Controller: MATLAB Function block. Inputs: r, r_ref, Vx, delta. Outputs: brake torque commands.",
+      "Reference model inside MATLAB Function: linear bicycle model r_ref calculation.",
+      "Oversteer event simulation: low mu, large steer input.",
+      "MIL: compare with H4 MATLAB result for same event."
+    ],
+    deliverables: [
+      "ESC_Closed_Loop.slx",
+      "Oversteer event: yaw rate and sideslip with/without ESC",
+      "ESC activation flag and corrective torque vs time"
+    ],
+    matlab: [
+      "Reference model inside MATLAB Function block as a nested function call"
+    ]
+  },
+  "S11": {
+    concept: "Torque vectoring controller (C10) in Simulink. Closed loop with four-wheel lateral plant. Yaw rate tracking in steady-state cornering.",
+    steps: [
+      "TV Controller MATLAB Function: inputs = r, r_ref, T_base. Outputs = T_RL, T_RR.",
+      "Four-wheel plant extension of S2 with individual rear torque inputs.",
+      "Test: constant radius cornering, understeer vehicle. TV reduces understeer.",
+      "MIL with C10 MATLAB result."
+    ],
+    deliverables: [
+      "TV_Closed_Loop.slx",
+      "Yaw rate reference vs actual: with/without TV",
+      "Individual rear wheel torque histories"
+    ],
+    matlab: [
+      "Extend S2 subsystem to accept [T_RL, T_RR] inputs"
+    ]
+  },
+  "S12": {
+    concept: "Linear MPC for yaw rate tracking using quadprog (base MATLAB, no MPC Toolbox). Formulate QP over prediction horizon N=10. Minimise yaw rate error + control effort subject to steering constraints. Apply receding horizon.",
+    why: "MPC is in controls JD. Implementing from scratch using quadprog without the MPC Toolbox shows deeper understanding than using the MPC block.",
+    steps: [
+      "Discrete bicycle model: Ad, Bd from ZOH discretisation at dt=0.01s.",
+      "Prediction: X(k+N|k) = Φ·x(k) + Ψ·U where U=[δ(k),...,δ(k+N-1)].",
+      "Cost: J = (Ψ·U−R_ref)'·Q_mpc·(Ψ·U−R_ref) + U'·R_mpc·U.",
+      "QP form: H=Ψ'QΨ+R, f=2Ψ'Q(Φx−R).",
+      "Constraints: δ_min ≤ δ ≤ δ_max for each horizon step.",
+      "quadprog(H, f, [], [], [], [], lb, ub). Apply U(1) only.",
+      "Declare quadprog as extrinsic in MATLAB Function block.",
+      "Compare with PID (H5): MPC anticipates corners, better trajectory tracking."
+    ],
+    equations: [
+      "min_U  U'HU + f'U  subject to lb≤U≤ub",
+      "H = Ψ'QΨ+R,  f = 2Ψ'Q(Φx−r_ref)"
+    ],
+    deliverables: [
+      "MPC in MATLAB Function block using quadprog",
+      "Yaw rate tracking: MPC vs PID comparison",
+      "Constraint satisfaction plot: δ within limits",
+      "Computation time: document quadprog is fast enough for 100 Hz"
+    ],
+    matlab: [
+      "coder.extrinsic('quadprog') in MATLAB Function block",
+      "quadprog(H, f, [], [], [], [], lb, ub)"
+    ]
+  },
+  "S13": {
+    concept: "Switch model from variable-step to fixed-step. Document minimum step size for accuracy. Show fixed-step results match variable-step. This makes the model HIL-ready.",
+    why: "Fixed-step is mandatory for real-time (HIL, dSPACE). Configuring and validating it correctly is directly in scope for controls and HIL JDs.",
+    steps: [
+      "Change solver: Configuration Parameters → Solver → Fixed-step → ode4.",
+      "Run at dt=0.001s. Compare with ode45 reference. RMS error per channel.",
+      "Increase dt: 0.005, 0.01, 0.02, 0.05s. Error vs dt plot.",
+      "Find maximum dt keeping error < 1%.",
+      "Estimate execution time: tic/toc on sim() with fixed-step.",
+      "Document: for dSPACE DS1005 at 333 MHz, estimate maximum achievable model rate."
+    ],
+    deliverables: [
+      "Fixed-step model configuration documentation",
+      "Error vs step size plot",
+      "Maximum step size recommendation with bandwidth justification",
+      "HIL readiness statement: step size, execution time estimate, I/O requirements"
+    ],
+    matlab: [
+      "Solver change: set_param(mdl,'Solver','ode4','FixedStep','0.001')",
+      "tic/toc around sim() call"
+    ]
+  },
+
+  /* ---------- Pillar 5 (CAN / ADAS) ---------- */
+  "P5_1": {
+    concept: "CAN frame: serial message with ID (11 or 29 bits), DLC (0-8 bytes), up to 8 data bytes, CRC. Arbitration: lowest ID wins bus contention. Bit stuffing prevents long sequences. Foundation of all ECU communication in vehicles.",
+    why: "Understanding CAN is required for Pillar 5 and Pillar 7. Every automotive engineer needs to know what a CAN frame looks like.",
+    steps: [
+      "Draw CAN frame: SOF(1), ID(11), RTR(1), IDE(1), r0(1), DLC(4), Data(0-64), CRC(15+1), ACK(2), EOF(7).",
+      "ID field: lower ID = higher priority. Node with ID=0x100 wins over 0x200 in simultaneous transmission.",
+      "Bit stuffing rule: after 5 consecutive same bits, insert a complementary bit.",
+      "CRC: 15-bit polynomial check. Node that detects CRC error transmits Error Flag.",
+      "Speeds: CAN 2.0A (11-bit ID, up to 1 Mbps), CAN 2.0B (29-bit ID), CAN-FD (up to 8 Mbps data phase).",
+      "Maximum message rate at 500 kbps for 8-byte message: approximately 108 bits/message → ~4600 messages/second."
+    ],
+    equations: [
+      "Max rate = bit_rate / bits_per_frame  [approx 100 bits for 8-byte message at 500kbps]"
+    ],
+    deliverables: [
+      "CAN frame structure diagram (MATLAB or draw.io)",
+      "Arbitration example worked bit-by-bit",
+      "CAN variant comparison table: 2.0A vs 2.0B vs FD",
+      "One-page CAN protocol summary"
+    ],
+    matlab: [
+      "No code required — documentation deliverable",
+      "Optional: dec2bin() for ID representation examples"
+    ]
+  },
+  "P5_2": {
+    concept: "DBC (Database CAN) file defines network: message IDs, signal bit positions, lengths, byte order, scale/offset, units, value range. Write one by hand for a simple 3-message 6-signal vehicle network.",
+    steps: [
+      "Message 1: VehicleState (ID=0x100, 8 bytes, 10ms cycle). Signals: VehicleSpeed (start=0, len=16, factor=0.01), YawRate (start=16, len=16, factor=0.01, offset=-327.68).",
+      "Message 2: WheelSpeeds (ID=0x200, 8 bytes). WS_FL, WS_FR, WS_RL, WS_RR each 16 bits, factor=0.01.",
+      "Message 3: TorqueRequest (ID=0x300, 4 bytes). TorqueReq (start=0, len=16, factor=0.1, offset=-3276.8), EnableFlag (start=16, len=1).",
+      "Write DBC syntax: BO_ 256 VehicleState: 8 VCU  SG_ VehicleSpeed : 0|16@1+ (0.01,0) [0|655.35] 'km/h' ECU",
+      "MATLAB encoder: bytes = encode_signal(value, start_bit, bit_length, factor, offset, byte_order).",
+      "Test: encode VehicleSpeed=50.0 km/h. Raw = (50.0−0)/0.01 = 5000 = 0x1388. Bytes: [0x88, 0x13, 0,0,0,0,0,0] for Intel byte order."
+    ],
+    equations: [
+      "Raw = (Physical − Offset) / Factor",
+      "Physical = Raw × Factor + Offset"
+    ],
+    deliverables: [
+      "vehicle_network.dbc file in correct DBC syntax",
+      "MATLAB encoder function",
+      "MATLAB decoder function",
+      "Round-trip test: encode then decode for all 6 signals"
+    ],
+    matlab: [
+      "uint8() for byte array",
+      "bitand(), bitshift() for bit manipulation",
+      "No Vehicle Network Toolbox needed"
+    ]
+  },
+  "P5_3": {
+    concept: "Implement CAN encoding and decoding in pure MATLAB using bit manipulation. Intel (little-endian) and Motorola (big-endian) byte order. No toolboxes. Demonstrates bit-level data understanding.",
+    steps: [
+      "Encoding function: convert physical value to raw integer. Place into 8-byte uint8 array at correct bit position using bitshift and bitor operations.",
+      "Intel byte order: LSB at start_bit. Motorola: MSB at start_bit.",
+      "Decoding: extract bits from byte array. Reconstruct integer. Handle sign extension for signed signals.",
+      "Test harness: 100 frame log with incrementing values. Encode, store, decode, verify round-trip.",
+      "Edge cases: signal spanning byte boundary, signed negative values, scaling with non-integer factor."
+    ],
+    deliverables: [
+      "MATLAB CAN encoder/decoder: encode_can.m and decode_can.m",
+      "Intel and Motorola byte order support",
+      "100-frame round-trip test: all values match to float precision"
+    ],
+    matlab: [
+      "bitand(uint8(val), uint8(mask))",
+      "bitshift(uint8(val), n)",
+      "typecast() for byte order conversion"
+    ]
+  },
+  "P5_4": {
+    concept: "CANape/INCA connect to ECUs via XCP protocol. A2L files describe the ECU memory map: MEASUREMENT (read-only), CHARACTERISTIC (writable calibration), AXIS_PTS. Calibration workflow: connect → read → modify → write → validate → release.",
+    steps: [
+      "XCP protocol: master (tool) sends commands (CMD_SHORT_DOWNLOAD, CMD_UPLOAD) to slave (ECU). Slave responds with DAQ packets.",
+      "A2L MEASUREMENT example: /begin MEASUREMENT YawRate FLOAT 0x20001234 1.0 0.0 -400 400 /end MEASUREMENT",
+      "A2L CHARACTERISTIC example: /begin CHARACTERISTIC ABS_SlipTarget FLOAT 0x20001500 1.0 0.0 0.0 0.5 /end CHARACTERISTIC",
+      "Calibration parameter examples for your ABS (B4/S8): kappa_target (0.05–0.25), Kp (0.1–10.0), activation_threshold (0.01–0.05).",
+      "Calibration workflow documented as a flowchart: connect → read current values → modify in tool → write to ECU RAM → test on vehicle → if good: flash to ROM → release as parameter set.",
+      "Difference: code = compiled algorithm (reflash required). Calibration = numerical parameters (XCP write, no reflash)."
+    ],
+    deliverables: [
+      "Two-page concept document: XCP, A2L, calibration workflow",
+      "Example A2L excerpt for 3 ABS parameters",
+      "Calibration parameter table: name, address, range, unit, default"
+    ],
+    matlab: [
+      "Documentation deliverable"
+    ]
+  },
+  "P5_5": {
+    concept: "Camera (classification, no direct range), radar (range + velocity via Doppler, all weather), LiDAR (3D point cloud, high resolution). Each has different strengths. Sensor fusion combines them for robust ADAS.",
+    steps: [
+      "Camera: FOV 60–120°, 30–60 Hz, good classification, fails in poor light, no direct range. Stereo triangulation for range.",
+      "Radar: 77 GHz FMCW. Range up to 200m. Radial velocity from Doppler shift fv = 2·v·fc/c. Works in rain/fog. Poor angular resolution, cannot classify.",
+      "LiDAR: ToF or FMCW. 3D point cloud. High lateral resolution (~0.1°). Range 50–200m. Expensive. Degraded in heavy rain.",
+      "Comparison table: range, velocity, classification ability, weather robustness, cost, update rate, output format.",
+      "Fusion: camera classifies object. Radar confirms range and velocity. LiDAR provides 3D bounding box. Fusion via Kalman filter.",
+      "Vehicle diagram: top view with sensor FOV arcs for front radar, corner radars, front camera, LiDAR."
+    ],
+    deliverables: [
+      "Sensor comparison table: 3 types × 8 criteria",
+      "Top-view sensor placement diagram with FOV arcs",
+      "One paragraph: why sensor fusion is necessary"
+    ],
+    matlab: [
+      "Documentation deliverable — no code required"
+    ]
+  },
+  "P5_6": {
+    concept: "ACC: headway time control. Ego follows lead car at gap_desired = Vx·τ_hw + d_min. PI controller on gap error. MATLAB simulation: two-vehicle model with lead car braking event.",
+    why: "Simplest ADAS feature. No toolboxes needed. Shows longitudinal ADAS control in MATLAB.",
+    steps: [
+      "State: [V_ego; gap; V_lead]. V_lead = given. gap_dot = V_lead − V_ego.",
+      "gap_desired = V_ego × τ_hw + d_min where τ_hw = 1.5s, d_min = 2m.",
+      "e_gap = gap − gap_desired.",
+      "PI: a_cmd = Kp·e_gap + Ki·∫e_gap dt. Clamp to [−5, +2] m/s².",
+      "Lead car event: V_lead drops from 30 to 15 m/s over 3s at t=10s.",
+      "Simulate 40s. Plot: gap(t), V_ego(t), V_lead(t), a_cmd(t).",
+      "Compare: no ACC vs P-only vs PI. Show gap recovery after lead braking."
+    ],
+    equations: [
+      "gap_desired = V_ego·τ_hw + d_min",
+      "ė_gap = V_lead − V_ego − τ_hw·a_ego",
+      "a_cmd = Kp·e + Ki·∫e dt  (clamped)"
+    ],
+    deliverables: [
+      "Two-vehicle ACC simulation",
+      "Time history: gap, speeds, command acceleration",
+      "Tuning: Kp and Ki values with rationale",
+      "Comparison: no ACC vs P vs PI"
+    ],
+    matlab: [
+      "ode45 3-state system or discrete Euler loop at 0.01s",
+      "clamp = @(x,lo,hi) min(max(x,lo),hi)"
+    ]
+  },
+  "P5_7": {
+    concept: "AEB: radar detects TTC < threshold → brake request → ESC/ABS → deceleration. LKA: camera detects lateral error from lane centre → PI steering correction. Documented as block diagrams with signal flows and timing requirements.",
+    steps: [
+      "AEB block diagram: Radar → TTC calculation (TTC = gap/relative_speed) → TTC < 2s → Partial brake; TTC < 1s → Full brake → ESC → ABS → Deceleration.",
+      "Timing requirement: AEB must detect and begin braking within 50ms of TTC threshold crossing.",
+      "LKA block diagram: Camera → Lane marking detection → Lateral error ey → PI controller → δ_correction → Steering actuator → Vehicle lateral dynamics (C1).",
+      "LKA override: driver steering torque > threshold → LKA deactivates.",
+      "Document failure modes: radar dropout (ACC/AEB deactivation), camera blindness (LKA deactivation). Limp-home mode."
+    ],
+    deliverables: [
+      "AEB control chain block diagram",
+      "LKA control chain block diagram",
+      "Timing table: max latency for each function",
+      "Failure mode and driver notification table"
+    ],
+    matlab: [
+      "Documentation deliverable"
+    ]
+  },
+  "P5_8": {
+    concept: "Classify VD control (ABS, TCS, ESC, TV) vs ADAS (ACC, AEB, LKA). Define the boundary: VD control operates in physical limit region and is mandatory. ADAS operates in normal driving and is driver assistance. Document interaction and arbitration.",
+    steps: [
+      "Classification criteria: mandatory by law? Operates at physical limit? Driver can override? Safety-critical (ASIL D) or quality-critical?",
+      "VD control: ABS (ASIL D, mandatory EU), TCS (ASIL C-D), ESC (ASIL D, mandatory EU), TV (ASIL B-C).",
+      "ADAS: ACC (ASIL B), AEB (ASIL C, mandatory EU 2024), LKA (ASIL B).",
+      "Interaction example: AEB requests −1g braking. ABS activates to prevent lockup. ESC monitors yaw stability during AEB.",
+      "Control architecture diagram: 3 layers: ADAS (request), VD control (execute safely), actuators (brake, throttle, steer).",
+      "ISO 26262: ASIL determination: ABS failure → S3, E4, C2 → ASIL D. ACC disengagement without warning → S2, E4, C3 → ASIL B."
+    ],
+    deliverables: [
+      "Classification table: 10+ functions with ASIL, mandatory/optional, limit/normal region",
+      "3-layer architecture diagram",
+      "Arbitration scenario: AEB + ABS + ESC co-activation",
+      "One-page technical note in interview-ready language"
+    ],
+    matlab: [
+      "Documentation deliverable"
+    ]
+  },
+
+  /* ---------- Pillar 7 (MIL/SIL/HIL/DiL) ---------- */
+  "S14": {
+    concept: "Formal MIL comparison report documenting that Simulink controllers match MATLAB references within defined tolerances across a test suite. This is the first gate in the MBD V-model.",
+    why: "A passed MIL test with documented evidence is what controls JDs mean by 'execute MIL validation cycles and document results against functional requirements.'",
+    steps: [
+      "Test cases: (1) step-steer 3° at 25 m/s, (2) braking from 30 m/s μ=0.8, (3) combined corner-braking.",
+      "For each: run MATLAB reference and Simulink model with identical parameters and inputs.",
+      "Metrics: RMS error, peak error, settling time difference per channel.",
+      "Pass: RMS < 1e-3 (0.1% of signal range), peak < 1e-2 for all channels.",
+      "Document: solver types, tolerances, Simulink version, MATLAB version.",
+      "Report structure: title, test plan, results table, pass/fail, root cause of any deviation, conclusion."
+    ],
+    deliverables: [
+      "MIL report: 3–5 pages PDF or Markdown",
+      "Pass/fail table: test cases × channels",
+      "Error plots: residual vs time for each case",
+      "Solver settings documentation"
+    ],
+    matlab: [
+      "batch_test_runner.m: loop over cases, run both, collect results",
+      "publish() to generate HTML/PDF report"
+    ]
+  },
+  "S15": {
+    concept: "SIL validation: fixed-step discrete Simulink model produces results equivalent to variable-step reference. Validates discretisation choice. Documents the SIL proxy approach and conceptually describes full code-generation SIL.",
+    steps: [
+      "MIL reference: ABS controller in variable-step Simulink (ode45).",
+      "SIL proxy: same controller in fixed-step at dt=0.01s.",
+      "Compare: wheel speed, Vx, κ, T_brake. RMS error vs MIL.",
+      "Sweep dt: 0.001 to 0.05s. Error vs dt plot.",
+      "Maximum dt with error < 5%: practical SIL pass criterion.",
+      "Document: in real SIL, Embedded Coder generates C code, compiled, run with same test vectors."
+    ],
+    deliverables: [
+      "Variable-step vs fixed-step comparison plot for ABS",
+      "Error vs step size plot",
+      "Maximum dt recommendation with bandwidth justification",
+      "Conceptual SIL description: what Embedded Coder adds"
+    ],
+    matlab: [
+      "sim() called twice with different solver params",
+      "set_param(mdl,'Solver','ode4','FixedStep','0.01') for fixed-step"
+    ]
+  },
+  "S16": {
+    concept: "Document HIL architecture, I/O mapping, execution time budget, and fault injection plan for your Simulink plant. This is what HIL readiness means for a junior engineer without access to actual HIL hardware.",
+    steps: [
+      "HIL architecture: real ECU ↔ CAN bus ↔ dSPACE real-time system (plant model at 1ms) ↔ I/O conditioning.",
+      "I/O mapping table: each signal, direction, physical range, unit, CAN message ID, bit position.",
+      "Execution budget: count floating-point operations in plant. Compare to dSPACE DS1005 (333 MHz, ~500 MFLOPS). Estimate achievable step rate.",
+      "Signal conditioning: wheel speed sensor → reluctor wheel → pulse train → frequency counter → digital speed.",
+      "Fault injection test plan: (1) WS_FL stuck at 0; (2) YawRate dropout; (3) CAN bus overload.",
+      "HIL readiness assessment: 2 pages documenting what is ready, what needs extension."
+    ],
+    deliverables: [
+      "HIL architecture diagram",
+      "I/O mapping table: all signals",
+      "Execution time budget: FLOP estimate vs platform capacity",
+      "Fault injection test plan: 3 scenarios",
+      "2-page HIL readiness assessment"
+    ],
+    matlab: [
+      "tic/toc on plant functions to estimate per-step time",
+      "Documentation deliverable"
+    ]
+  },
+  "S17": {
+    concept: "Document DiL latency requirements, model fidelity vs latency trade-off, and assessment of where your current model sits in a DiL chain. No rig needed — this is an engineering analysis.",
+    steps: [
+      "DiL chain: steering encoder (2ms) → model execution (target <1ms at 1 kHz) → motion cue calculation (5ms) → platform actuator + visual (15ms) → total budget <25ms.",
+      "Latency budget table: break down the 25ms end-to-end.",
+      "Fidelity trade-off: (a) bicycle model (<0.01ms) — yaw dynamics DiL; (b) 4-wheel + suspension (~0.1ms) — handling and steering feel; (c) full MBS (>10ms) — not real-time on standard hardware.",
+      "Which applications your model supports: yaw dynamics testing, steering feel, comfort ride.",
+      "Document what extension would be needed for a full-vehicle handling DiL rig."
+    ],
+    deliverables: [
+      "DiL architecture diagram",
+      "Latency budget table: 25ms allocation by source",
+      "Fidelity vs latency table: 3 model levels",
+      "Assessment: current model capabilities and required extensions"
+    ],
+    matlab: [
+      "Documentation deliverable",
+      "tic/toc on model functions for execution time data"
+    ]
+  },
+  "P7_1": {
+    concept: "ISO 26262 functional safety standard. ASIL A–D levels from hazard analysis. V-model development process. MIL/SIL/HIL in the V-model. Traceability from requirement to test. Write a 3-page awareness document.",
+    why: "ISO 26262 awareness is in every controls JD. Junior engineers do not implement the full process but must understand the framework and their work's position within it.",
+    steps: [
+      "ASIL determination: Severity (S0-S3) × Exposure (E0-E4) × Controllability (C0-C3) → ASIL A/B/C/D or QM.",
+      "ABS example: S3 (fatal crash), E4 (highway use is frequent), C2 (driver partial control) → ASIL D.",
+      "V-model: left side (requirements → system design → HW/SW design → coding). Right side (unit test → integration → system test → vehicle validation).",
+      "Traceability: each requirement has an ID. Each test case references requirement IDs.",
+      "Write the 3-page document: ASIL determination, V-model diagram, traceability matrix for 5 ABS requirements."
+    ],
+    deliverables: [
+      "ASIL determination: worked example for ABS, ESC, and ACC",
+      "V-model diagram with MIL/SIL/HIL annotated",
+      "Traceability matrix: 5 requirements × 5 test cases × pass/fail from S14",
+      "3-page ISO 26262 awareness document"
+    ],
+    matlab: [
+      "Documentation deliverable"
+    ]
+  },
+  "P7_2": {
+    concept: "Automated test harness: run ABS controller (S8) across a 4×5 matrix of (mu, V0) conditions. Auto-collect metrics. Auto-generate pass/fail. Shows MBD test automation capability.",
+    why: "Automated testing is required in VD controls and HIL JDs. A structured pass/fail matrix is a concrete MBD artefact.",
+    steps: [
+      "Test matrix: mu = [0.3, 0.5, 0.8, 1.0], V0_kph = [10, 20, 30, 40, 60]. 20 combinations.",
+      "For each (mu, V0): set p.tyre.mu=mu and initial Vx=V0/3.6. Run Simulink via sim(). Extract metrics.",
+      "Metrics: stopping distance, peak slip ratio, ABS activation duration, minimum omega (must be > 0).",
+      "Pass criteria: stopping distance within 5% of optimal (from B3), peak κ < 0.30, no lockup.",
+      "Auto-generate: results table 20 rows × 5 columns + pass/fail. Export to CSV.",
+      "Summary: count passes, highlight failures with reason."
+    ],
+    deliverables: [
+      "Test harness script: run_abs_test_matrix.m",
+      "Results table: 20 cases × metrics + pass/fail",
+      "Stopping distance vs mu plot (family of curves)",
+      "Auto-generated report"
+    ],
+    matlab: [
+      "Nested for-loop: for i_mu=1:4, for i_v=1:5, set params, run sim, collect",
+      "writetable(results, 'abs_test_results.csv')"
+    ]
+  },
+  "P7_3": {
+    concept: "Write a formal test report from P7_2 results. Engineering documentation standard. Purpose, scope, environment, test cases, results, pass/fail, observations, recommendations.",
+    steps: [
+      "Structure: 1-Purpose and scope. 2-Test environment. 3-Test cases. 4-Results. 5-Pass/fail summary. 6-Anomalies. 7-Conclusion.",
+      "Coverage rationale: explain why 4 mu × 5 V0 covers the operational design domain.",
+      "Anomaly documentation: if any case shows ABS stopping distance worse than no-ABS, document as known limitation.",
+      "Sign-off section: version, date, author.",
+      "Use MATLAB publish() to auto-generate from a script with embedded plots."
+    ],
+    deliverables: [
+      "Test report PDF: 4–6 pages",
+      "Coverage matrix and rationale",
+      "Pass/fail summary with overall verdict",
+      "Improvement recommendations for marginal cases"
+    ],
+    matlab: [
+      "MATLAB publish('test_report.m', 'pdf') for auto-generation",
+      "Or write as structured Markdown with embedded figure references"
+    ]
+  }
+};
+
+/* =====================================================================
+   STATE / STORAGE
+   ===================================================================== */
+function loadState() {
+  try { return JSON.parse(localStorage.getItem('vd_tracker') || '{}'); }
+  catch { return {}; }
+}
+function saveState(state) {
+  localStorage.setItem('vd_tracker', JSON.stringify(state));
+}
+let state = loadState();
+
+let TOTAL = 0;
+PILLARS.forEach(p => p.groups.forEach(g => TOTAL += g.projects.length));
+document.getElementById('stat-total').textContent = TOTAL;
+document.getElementById('total-label').textContent = `0 / ${TOTAL}`;
+
+/* =====================================================================
+   SIDEBAR NAV
+   ===================================================================== */
+const nav = document.getElementById('sidebar-nav');
+PILLARS.forEach((p, i) => {
+  const item = document.createElement('div');
+  item.className = 'nav-item' + (i === 0 ? ' active' : '');
+  item.dataset.pid = p.id;
+  let ptotal = 0;
+  p.groups.forEach(g => ptotal += g.projects.length);
+  item.innerHTML = `
+    <div class="nav-dot" style="background:${p.color}"></div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="nav-label">${p.short}</span>
+        <span class="nav-count" data-pid="${p.id}">0/${ptotal}</span>
+      </div>
+      <div class="nav-mini-bar">
+        <div class="nav-mini-fill" data-pid="${p.id}" style="width:0%;background:${p.color}"></div>
+      </div>
+    </div>`;
+  item.addEventListener('click', () => showPillar(p.id));
+  nav.appendChild(item);
+});
+
+/* =====================================================================
+   PILLAR SECTIONS
+   ===================================================================== */
+const sectionsEl = document.getElementById('pillar-sections');
+PILLARS.forEach((p, i) => {
+  const sec = document.createElement('div');
+  sec.className = 'pillar-section' + (i === 0 ? ' active' : '');
+  sec.id = 'sec-' + p.id;
+
+  let ptotal = 0;
+  p.groups.forEach(g => ptotal += g.projects.length);
+
+  const depHtml = p.dep ? `<div class="dependency-note">↳ ${p.dep}</div>` : '';
+
+  const groupsHtml = p.groups.map(g => {
+    const cards = g.projects.map(proj => {
+      const done = state[proj.id] ? 'done' : '';
+      const hasDetails = !!PROJECT_DETAILS[proj.id];
+      const hint = hasDetails ? '<span class="proj-hint">↗ details</span>' : '';
+      return `
+        <div class="project-card ${done}" data-id="${proj.id}" data-pillar="${p.id}">
+          <div class="proj-check">
+            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+              <path d="M1 4l3 3 5-6" stroke="white" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="proj-body">
+            <div class="proj-id">${proj.id}</div>
+            <div class="proj-title">${proj.title}</div>
+          </div>
+          ${hint}
+        </div>`;
+    }).join('');
+    return `
+      <div class="group-label">${g.label}</div>
+      <div class="project-grid" data-group="${g.label}">${cards}</div>`;
+  }).join('');
+
+  sec.innerHTML = `
+    <div class="pillar-header">
+      <div class="pillar-title">${p.title}</div>
+      <div class="pillar-tag" style="background:${p.color}18;color:${p.color}">${ptotal} projects</div>
+    </div>
+    <div class="pillar-desc">${p.desc}</div>
+    ${depHtml}
+    <div class="pillar-progress-row">
+      <div class="pillar-bar-wrap">
+        <div class="pillar-bar-fill" data-pid="${p.id}" style="width:0%;background:${p.color}"></div>
+      </div>
+      <div class="pillar-pct" data-pid="${p.id}">0%</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">show:</span>
+      <button class="filter-btn active" data-filter="all" data-pid="${p.id}">all</button>
+      <button class="filter-btn" data-filter="todo" data-pid="${p.id}">to-do</button>
+      <button class="filter-btn" data-filter="done" data-pid="${p.id}">done</button>
+    </div>
+    ${groupsHtml}`;
+
+  sectionsEl.appendChild(sec);
+});
+
+/* =====================================================================
+   EVENT HANDLERS
+   ===================================================================== */
+/* Card click: checkbox toggles; elsewhere opens drawer */
+sectionsEl.addEventListener('click', e => {
+  const card = e.target.closest('.project-card');
+  if (!card) return;
+  const check = e.target.closest('.proj-check');
+  const btn = e.target.closest('.filter-btn');
+  if (btn) return; // filter buttons handled by their own listener
+
+  const id = card.dataset.id;
+
+  if (check) {
+    // Toggle completion state
+    state[id] = !state[id];
+    card.classList.toggle('done', state[id]);
+    saveState(state);
+    updateStats();
+    applyFilter(card.dataset.pillar);
+  } else if (PROJECT_DETAILS[id]) {
+    // Open the spec drawer
+    openDrawer(id);
+  }
+});
+
+/* Filter buttons */
+sectionsEl.addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  const pid = btn.dataset.pid;
+  sectionsEl.querySelectorAll(`.filter-btn[data-pid="${pid}"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter(pid);
+});
+
+function applyFilter(pid) {
+  const sec = document.getElementById('sec-' + pid);
+  if (!sec) return;
+  const filter = sec.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+  sec.querySelectorAll('.project-card').forEach(card => {
+    if (filter === 'all') card.style.display = '';
+    else if (filter === 'done') card.style.display = card.classList.contains('done') ? '' : 'none';
+    else card.style.display = !card.classList.contains('done') ? '' : 'none';
+  });
+}
+
+/* =====================================================================
+   NAVIGATION / STATS
+   ===================================================================== */
+function showPillar(pid) {
+  document.querySelectorAll('.pillar-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + pid).classList.add('active');
+  document.querySelector(`.nav-item[data-pid="${pid}"]`).classList.add('active');
+  document.getElementById('main-content').scrollTop = 0;
+}
+
+function countDone() {
+  let done = 0, started = 0;
+  PILLARS.forEach(p => {
+    let pdone = 0;
+    p.groups.forEach(g => g.projects.forEach(proj => { if (state[proj.id]) { done++; pdone++; } }));
+    if (pdone > 0) started++;
+  });
+  return { done, started };
+}
+
+function updateStats() {
+  const { done, started } = countDone();
+  const pct = TOTAL > 0 ? Math.round(done / TOTAL * 100) : 0;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pillars').textContent = started;
+  document.getElementById('stat-pct').textContent = pct + '%';
+  document.getElementById('total-label').textContent = `${done} / ${TOTAL}`;
+  document.getElementById('total-bar').style.width = pct + '%';
+  PILLARS.forEach(p => {
+    let pdone = 0, ptotal = 0;
+    p.groups.forEach(g => g.projects.forEach(proj => {
+      ptotal++;
+      if (state[proj.id]) pdone++;
+    }));
+    const el = document.querySelector(`.nav-mini-fill[data-pid="${p.id}"]`);
+    const cnt = document.querySelector(`.nav-count[data-pid="${p.id}"]`);
+    if (el) el.style.width = ptotal ? (pdone/ptotal*100)+'%' : '0%';
+    if (cnt) cnt.textContent = `${pdone}/${ptotal}`;
+    const pbar = document.querySelector(`.pillar-bar-fill[data-pid="${p.id}"]`);
+    const ppct = document.querySelector(`.pillar-pct[data-pid="${p.id}"]`);
+    if (pbar) pbar.style.width = ptotal ? (pdone/ptotal*100)+'%' : '0%';
+    if (ppct) ppct.textContent = ptotal ? Math.round(pdone/ptotal*100)+'%' : '0%';
+  });
+}
+
+/* =====================================================================
+   DRAWER
+   ===================================================================== */
+function openDrawer(projId) {
+  const d = PROJECT_DETAILS[projId];
+  if (!d) return;
+
+  const cardEl = document.querySelector(`.project-card[data-id="${projId}"]`);
+  const pid = cardEl?.querySelector('.proj-id')?.textContent || projId;
+  const title = cardEl?.querySelector('.proj-title')?.textContent || '';
+  const isDone = state[projId];
+
+  document.getElementById('drawer-pid').textContent = pid;
+  document.getElementById('drawer-title').textContent = title;
+
+  let html = '';
+  if (isDone) {
+    html += `<div class="done-banner">
+      <svg width="14" height="14" viewBox="0 0 14 14">
+        <path d="M2 7l3.5 3.5 6.5-6.5" stroke="currentColor" stroke-width="1.5"
+              fill="none" stroke-linecap="round"/>
+      </svg>Completed</div>`;
+  }
+
+  html += `<div class="section-label">Concept</div>
+           <p class="concept-text">${escHtml(d.concept)}</p>`;
+  html += `<div class="section-label">Why it matters</div>
+           <div class="why-box">${escHtml(d.why)}</div>`;
+
+  if (d.steps && d.steps.length) {
+    html += `<div class="section-label">Steps</div><ol class="steps-list">`;
+    d.steps.forEach(s => html += `<li>${escHtml(s)}</li>`);
+    html += `</ol>`;
+  }
+  if (d.equations && d.equations.length) {
+    html += `<div class="section-label">Key Equations</div>`;
+    d.equations.forEach(eq => html += `<div class="eq-block">${escHtml(eq)}</div>`);
+  }
+  if (d.deliverables && d.deliverables.length) {
+    html += `<div class="section-label">Deliverables</div><ul class="deliverable-list">`;
+    d.deliverables.forEach(dv => html += `<li>${escHtml(dv)}</li>`);
+    html += `</ul>`;
+  }
+  if (d.matlab && d.matlab.length) {
+    html += `<div class="section-label">MATLAB Hints</div><ul class="matlab-list">`;
+    d.matlab.forEach(m => html += `<li>${escHtml(m)}</li>`);
+    html += `</ul>`;
+  }
+
+  document.getElementById('drawer-body').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer').scrollTop = 0;
+}
+
+function closeDrawer() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+function escHtml(s) {
+  if (s === undefined || s === null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('overlay').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+updateStats();
+</script>
+</body>
+</html>

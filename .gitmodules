@@ -1,0 +1,3 @@
+[submodule "LTS-MATLAB"]
+	path = LTS-MATLAB
+	url = https://github.com/RISHYAVANDHAN/LTS-MATLAB.git
