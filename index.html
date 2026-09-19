@@ -298,6 +298,8 @@ const PILLARS = [
         { id:'E5', title:'Half-car model — pitch dynamics' },
         { id:'E6', title:'Damper and spring sensitivity study' },
         { id:'E7', title:'Anti-roll bar effect' },
+        { id:'E8', title:'Active suspension — quarter-car with force actuator' },
+        { id:'E9', title:'Active suspension — Bode-based controller design' },
       ]},
       { label: 'F — Suspension Kinematics', projects: [
         { id:'F1', title:'Double wishbone geometry — 2D' },
@@ -373,6 +375,7 @@ const PILLARS = [
         { id:'B5', title:'Simple TCS' },
         { id:'B6', title:'Launch control' },
         { id:'C10', title:'Torque vectoring — yaw moment control' },
+        { id:'C11', title:'Closed-loop bicycle model — frequency response shaping' },
       ]},
       { label: 'H — State-Space and Observers (MATLAB)', projects: [
         { id:'H1', title:'Bicycle model in state-space form' },
@@ -380,6 +383,9 @@ const PILLARS = [
         { id:'H3', title:'Kalman filter for sideslip estimation' },
         { id:'H4', title:'ESC yaw rate controller' },
         { id:'H5', title:'PID tuning for slip controller' },
+        { id:'H6', title:'Plant transfer function derivation — slip and yaw dynamics' },
+        { id:'H7', title:'Root locus controller design for slip and ESC' },
+        { id:'H8', title:'Bode stability margins — gain and phase margin for ESC' },
       ]},
       { label: 'S — Controllers in Simulink (closed-loop)', projects: [
         { id:'S8',  title:'ABS controller in Simulink — closed loop with plant' },
@@ -388,6 +394,11 @@ const PILLARS = [
         { id:'S11', title:'Torque vectoring controller in Simulink' },
         { id:'S12', title:'MPC via quadprog in MATLAB Function block' },
         { id:'S13', title:'Fixed-step solver configuration and step-size study' },
+      ]},
+      { label: 'K — Digital Controller Design', projects: [
+        { id:'K1', title:'Controller discretisation — Tustin vs ZOH comparison' },
+        { id:'K2', title:'Sample rate sensitivity and aliasing study' },
+        { id:'K3', title:'Z-domain analysis for discrete slip controller' },
       ]},
     ]
   },
@@ -1465,6 +1476,62 @@ const PROJECT_DETAILS = {
       "rerun C7 handling diagram with different ARB settings"
     ]
   },
+  "E8": {
+    concept: "Extend the quarter-car (E1) by replacing the passive damper with an active force actuator F_act between sprung and unsprung mass. The actuator can apply any force — suspension still has passive spring. This is the sky-hook / active suspension plant.",
+    why: "Active suspension breaks the comfort-handling trade-off shown in E3. This project builds the plant that E9 will control. Directly relevant to semi-active and active chassis roles.",
+    steps: [
+      "State: x = [zs; żs; zu; żu]. Same as E1 but F_act replaces cs·(żs−żu).",
+      "Passive damper cs = 0 (pure active case). Or: retain cs and add F_act on top.",
+      "New equations: ms·z̈s = −ks(zs−zu) + F_act. mu·z̈u = ks(zs−zu) − F_act − kt(zu−zr).",
+      "State-space: Ẋ = A·X + B_road·zr + B_act·F_act. Two inputs.",
+      "Verify open-loop: with F_act=0, result must match E1. Eigenvalues same.",
+      "Simulate open-loop step road input with F_act=0 and compare with E1.",
+      "Plot: body and wheel displacement for passive (F_act=0) vs any test F_act signal."
+    ],
+    equations: [
+      "ms·z̈s = −ks(zs−zu) + F_act",
+      "mu·z̈u = ks(zs−zu) − F_act − kt(zu−zr)",
+      "Ẋ = A·X + B_road·zr + B_act·F_act"
+    ],
+    deliverables: [
+      "State-space matrices A, B_road, B_act for active quarter-car",
+      "Open-loop verification: F_act=0 matches E1 eigenvalues",
+      "Two-input simulation function: [t,x] = active_qcar(zr_input, Fact_input, p)",
+      "Step road response: passive spring only (open-loop baseline)"
+    ],
+    matlab: [
+      "B_act = [1/ms; 0; -1/mu; 0] — actuator input column",
+      "Two-input: use lsim(ss(A,[B_road B_act],C,D), [zr_vec Fact_vec], t)"
+    ]
+  },
+  "E9": {
+    concept: "Design a frequency-domain controller for the active suspension plant (E8). Use Bode analysis to target attenuation at the 1 Hz body resonance while maintaining road-holding at 10 Hz. Compare sky-hook damping law vs a proper frequency-shaped controller.",
+    why: "Active suspension control is an open research and product area. This project integrates frequency-domain methods (from CTMS) directly into a VD application — showing you can apply classical control theory to vehicle ride.",
+    steps: [
+      "Sky-hook: F_act = −c_sky·żs. Tune c_sky by Bode — compute closed-loop body acceleration TF and tyre load TF. Sweep c_sky.",
+      "Optimal: treat as single-input (F_act) multi-output. Minimise body acceleration TF peak at 1 Hz subject to tyre load TF not exceeding passive at 10 Hz.",
+      "Frequency-shaped: design C(s) = K·(s²+2ζ_n·ωn·s+ωn²) / (s²+2ζ_d·ωd·s+ωd²) to notch body resonance.",
+      "Compute closed-loop TFs for each controller via H_cl = H_zr·(1/(1 + C·G_act)).",
+      "Compare: passive, sky-hook, frequency-shaped. Plot body acceleration and tyre load TFs for all three.",
+      "Verify in time domain: simulate over ISO 8608 class B road (E4). RMS body acceleration and tyre load variation for each."
+    ],
+    equations: [
+      "Sky-hook: F_act = −c_sky·żs",
+      "Closed-loop: H_cl(jω) = H_passive·1/(1 + C(jω)·G_act(jω))",
+      "Notch: C(s) = K·(s²+2ζn·ωn·s+ωn²)/(s²+2ζd·ωd·s+ωd²)"
+    ],
+    deliverables: [
+      "Body acceleration TF: passive vs sky-hook vs frequency-shaped",
+      "Tyre load TF: same three comparison",
+      "RMS table: comfort and handling metrics for all controllers",
+      "Pareto update: show active controllers break the E3 passive trade-off boundary"
+    ],
+    matlab: [
+      "G_act(jω) = C_act*((1j*omega*eye(4)-A)\\B_act) from E8 matrices",
+      "Sky-hook: tune c_sky by sweeping and computing closed-loop RMS",
+      "Overlay E3 Pareto scatter: add active points to show boundary broken"
+    ]
+  },
   "F1": {
     concept: "Define a double-wishbone suspension by its hardpoints. For a given wheel travel, compute wheel centre path, camber change, and toe change using geometry.",
     why: "Suspension kinematics are required for WiMi and German MATLAB JD. Building a geometry solver from scratch proves fundamental multibody understanding.",
@@ -2319,6 +2386,34 @@ const PROJECT_DETAILS = {
       "Discrete loop at 0.01s"
     ]
   },
+  "C11": {
+    concept: "Design a simple feedback controller on the bicycle model to shape the closed-loop frequency response. Target: increase yaw bandwidth beyond the open-loop value from C5, without excessive gain at high frequency. Connects C5 (open-loop Bode) directly to a control design outcome.",
+    why: "C5 analyses the open-loop bicycle dynamics. C11 closes the loop and shows how a controller reshapes the frequency response — the direct link between classical control theory and vehicle handling performance.",
+    steps: [
+      "Start from G_yaw(s) derived in H6. Open-loop Bode from C5 gives baseline bandwidth.",
+      "Design a proportional-derivative controller: C(s) = Kp + Kd·s/(τ·s+1).",
+      "Closed-loop TF: T(s) = C(s)·G(s)/(1+C(s)·G(s)).",
+      "Compute closed-loop Bode. Increase Kp until bandwidth doubles. Then add Kd to reduce high-frequency gain.",
+      "Verify PM and GM on the open-loop Bode (reuse H8 method).",
+      "Simulate closed-loop step steer. Compare yaw rate step response with open-loop (C4).",
+      "Trade-off: higher bandwidth → faster response but more steering sensitivity. Show with sweep of Kp."
+    ],
+    equations: [
+      "C(s) = Kp + Kd·s/(τ·s+1)  [PD with filter]",
+      "T_cl(s) = C(s)·G(s)/(1+C(s)·G(s))",
+      "Bandwidth: ω where |T_cl| = −3 dB"
+    ],
+    deliverables: [
+      "Closed-loop Bode: open-loop vs C11 controller for 3 Kp values",
+      "Bandwidth vs Kp plot",
+      "Step steer: open-loop vs closed-loop yaw rate response",
+      "PM and GM table for each Kp"
+    ],
+    matlab: [
+      "T_cl(jω) = C(jω)*G(jω)/(1+C(jω)*G(jω)) — manual frequency sweep",
+      "Bandwidth: find omega where abs(T_cl) = 1/sqrt(2)*abs(T_cl_DC)"
+    ]
+  },
   "H1": {
     concept: "Write bicycle model in standard A,B,C,D form. Compute controllability matrix Co = [B|AB] and observability matrix Ob = [C;CA]. Check full rank. Determine whether sideslip can be reconstructed from yaw rate and lateral acceleration measurements alone.",
     why: "State-space formulation and observability analysis are prerequisites for observer design (H2,H3). Listed explicitly in controls JD.",
@@ -2462,6 +2557,89 @@ const PROJECT_DETAILS = {
       "Anti-windup: I_term = min(max(I_term + Ki*e*dt, -I_max), I_max)"
     ]
   },
+  "H6": {
+    concept: "Derive the continuous-time transfer function of the wheel slip plant (B4) and the yaw rate plant (H4). Express each as G(s) = Y(s)/U(s). This is the analytical foundation required before root locus or Bode-based design.",
+    why: "You cannot do root locus or frequency-domain design without the plant TF. Every classical controls method starts here.",
+    steps: [
+      "Slip plant (B4): linearise wheel dynamics about slip κ = κ_target. State: κ. Input: T_brake. Derive G_slip(s) = Δκ(s)/ΔT(s) by linearising the wheel ODE around operating point.",
+      "Yaw plant (H4): from the bicycle model (H1) with output r and input Mz (corrective yaw moment). G_yaw(s) = R(s)/Mz(s) from the state-space: G = C·(sI−A)⁻¹·B.",
+      "Verify both G(s) by comparing step response of TF with nonlinear MATLAB simulation from B4/H4.",
+      "Compute poles and zeros of each TF. Interpret: stable? Minimum phase?",
+      "Plot pole-zero maps for both plants."
+    ],
+    equations: [
+      "G(s) = C·(sI−A)⁻¹·B  [from state-space]",
+      "G_slip(s): linearise J·ω̇ = T_net − Fx·R around κ_target",
+      "G_yaw(s) = R(s)/Mz(s) extracted from 2×2 bicycle state-space"
+    ],
+    deliverables: [
+      "G_slip(s) as symbolic or numeric transfer function",
+      "G_yaw(s) as symbolic or numeric transfer function",
+      "Step response overlay: TF vs nonlinear simulation",
+      "Pole-zero maps for both plants"
+    ],
+    matlab: [
+      "G = ss(A,B,C,D); tf(G) to convert",
+      "zpk(G) for zero-pole-gain form",
+      "pzmap(G) for pole-zero map",
+      "No Control System Toolbox: G(s) = C*((s*eye(n)-A)\\B) manually"
+    ]
+  },
+  "H7": {
+    concept: "Design the slip controller (B4) and the ESC yaw controller (H4) using root locus. Choose gain K so closed-loop poles achieve target damping ratio ζ ≥ 0.7 and bandwidth. Add a lead compensator if needed.",
+    why: "Root locus is a standard classical design tool. Demonstrating it on a vehicle plant rather than a textbook DC motor shows applied competence.",
+    steps: [
+      "Slip controller: open-loop TF = K·G_slip(s). Plot root locus vs K. Mark the K that gives ζ=0.7.",
+      "Check: is bandwidth sufficient? If not, add lead compensator: C(s) = K·(s+z)/(s+p) with p > z.",
+      "Yaw controller: same process for G_yaw(s). Target: ζ ≥ 0.7, settling time < 0.5s.",
+      "Verify: closed-loop step response with designed K. Compare with B4/H4 manual tuning.",
+      "Robustness check: shift plant gain ±30%. Do closed-loop poles remain stable?"
+    ],
+    equations: [
+      "Closed-loop: T(s) = K·G(s)/(1+K·G(s))",
+      "Damping condition: cos(∠pole) = ζ on root locus",
+      "Lead: C(s) = K(s+z)/(s+p),  p > z > 0"
+    ],
+    deliverables: [
+      "Root locus plot for slip plant — marked design point",
+      "Root locus plot for yaw plant — marked design point",
+      "Closed-loop step response: root-locus-designed vs manual gains",
+      "Robustness: closed-loop poles for ±30% plant gain variation"
+    ],
+    matlab: [
+      "Manual root locus: sweep K, compute eig(A_cl) = eig(A-B*K*C), plot",
+      "No rltool needed — manual gain sweep is sufficient and more instructive",
+      "rlocus(G) if Control System Toolbox available"
+    ]
+  },
+  "H8": {
+    concept: "Compute gain margin and phase margin for the ESC closed-loop (H4) and the ABS closed-loop (B4/H5). Explicitly set GM ≥ 6 dB and PM ≥ 45° as design requirements. Show where margins are and what they mean physically.",
+    why: "Gain and phase margin are standard stability measures in every embedded control system. ESC must remain stable across tyre-road conditions — margins quantify how much plant variation is tolerable.",
+    steps: [
+      "Open-loop TF: L(s) = C(s)·G(s) where C(s) is the designed controller from H5/H7.",
+      "Bode of L(jω): plot magnitude and phase vs frequency.",
+      "Gain margin: at phase = −180°, how much can gain increase before instability? GM = −20·log10|L(jωpc)|.",
+      "Phase margin: at |L|=0 dB, how much phase lag before instability? PM = 180° + ∠L(jωgc).",
+      "If GM < 6 dB or PM < 45°: add gain reduction or lag compensator.",
+      "Verify: simulate closed-loop step with gain increased to GM limit — system should be marginally stable."
+    ],
+    equations: [
+      "GM = 1/|L(jω_pc)|  [at ∠L = −180°]",
+      "PM = 180° + ∠L(jω_gc)  [at |L| = 0 dB]",
+      "Design spec: GM ≥ 6 dB,  PM ≥ 45°"
+    ],
+    deliverables: [
+      "Bode plot of open-loop L(jω) for ABS and ESC",
+      "Annotated GM and PM on each Bode plot",
+      "Table: GM, PM for original gains vs root-locus-designed gains",
+      "Simulation: closed-loop at nominal, at 0.9×GM limit"
+    ],
+    matlab: [
+      "Bode manually: L = C_num/C_den * G_num/G_den as TF, evaluate at omega array",
+      "Phase crossover: find omega where angle(L) = -pi using interp1",
+      "Gain crossover: find omega where abs(L) = 1 using interp1"
+    ]
+  },
   "S8": {
     concept: "Port the MATLAB ABS controller (B4) into a Simulink closed-loop model. Multi-rate: controller at 100 Hz, plant at 1 kHz. Rate Transition blocks. MIL comparison with B4 result.",
     why: "Simulink implementation of a validated MATLAB controller is the core MBD workflow. Multi-rate design mirrors embedded reality.",
@@ -2583,6 +2761,91 @@ const PROJECT_DETAILS = {
     matlab: [
       "Solver change: set_param(mdl,'Solver','ode4','FixedStep','0.001')",
       "tic/toc around sim() call"
+    ]
+  },
+
+  "K1": {
+    concept: "Take the continuous-time PID from H5 and discretise it using Tustin (bilinear) and ZOH methods at dt=0.01s. Compare continuous and discrete step responses. Show where they diverge when sample rate decreases.",
+    why: "Every controller that runs on an ECU is discrete. Knowing how and why to discretise, and what can go wrong, is a fundamental embedded controls skill.",
+    steps: [
+      "Continuous PID: C(s) = Kp + Ki/s + Kd·s/(τ_f·s+1) from H5.",
+      "Tustin: substitute s = (2/dt)·(z−1)/(z+1). Expand, collect coefficients, write as difference equation.",
+      "ZOH: discretise plant G(s) with ZOH, then match closed-loop pole locations for C_ZOH(z).",
+      "Simulate both in discrete loop at dt=0.01s. Compare with continuous reference (ode45).",
+      "Reduce dt: 0.05s, 0.1s. Show degradation — Tustin warps high-frequency behaviour first.",
+      "Plot: step responses overlaid — continuous, Tustin, ZOH at each sample rate."
+    ],
+    equations: [
+      "Tustin: s → (2/dt)·(z−1)/(z+1)",
+      "ZOH: G_d(z) = (1−z⁻¹)·Z{G(s)/s}",
+      "Tustin frequency warping: ω_d = (2/dt)·tan(ω·dt/2)"
+    ],
+    deliverables: [
+      "Continuous PID difference equation (Tustin)",
+      "Step response: continuous vs Tustin vs ZOH at dt=0.01s",
+      "Degradation plot: error vs sample rate for both methods",
+      "Written: when to use Tustin vs ZOH and why"
+    ],
+    matlab: [
+      "Tustin: c2d(C_tf, dt, 'tustin') or manual algebraic substitution",
+      "ZOH: c2d(G_tf, dt, 'zoh')",
+      "Discrete loop: y(k) = b0*e(k) + b1*e(k-1) + ... − a1*y(k-1) − ..."
+    ]
+  },
+  "K2": {
+    concept: "Sweep sample rate from 1 kHz down to 10 Hz for the ABS discrete PID. Measure closed-loop performance degradation: rise time increase, overshoot increase, instability onset. Identify minimum viable sample rate.",
+    why: "ECU CPU budget is finite. Knowing the minimum sample rate that meets performance specs directly informs task scheduling decisions in production software.",
+    steps: [
+      "Take Tustin-discretised ABS PID from K1.",
+      "Sweep dt: 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1 seconds.",
+      "For each: simulate closed-loop step response. Extract rise time, overshoot, settling time, steady-state error.",
+      "Find instability onset: at what dt does the closed-loop go unstable?",
+      "Nyquist criterion check: closed-loop poles via eig(A_d − B_d·K_d·C) — all inside unit circle?",
+      "Rule of thumb verification: dt should be < 1/(10·bandwidth). Confirm against your results.",
+      "Plot: performance metrics vs dt. Annotate minimum viable dt."
+    ],
+    equations: [
+      "Stability: all |λ_i(A_cl_d)| < 1",
+      "Rule of thumb: dt < 1/(10·ω_bw)"
+    ],
+    deliverables: [
+      "Step response family: one curve per sample rate",
+      "Performance metric table: rise time, OS, settling time vs dt",
+      "Stability boundary: dt at which first pole exits unit circle",
+      "Recommendation: minimum sample rate with justification"
+    ],
+    matlab: [
+      "c2d(sys, dt, 'tustin') inside a for-loop over dt values",
+      "eig(A_cl_discrete) — check all abs(eig) < 1",
+      "semilogy(dt_vec, metric_vec) for degradation plot"
+    ]
+  },
+  "K3": {
+    concept: "Analyse the discrete slip controller in the Z-domain. Plot the Z-plane pole-zero map. Verify stability (all poles inside unit circle). Show how root locus in Z-plane relates to the S-plane design from H7.",
+    why: "Z-domain analysis closes the loop between continuous design (H7, root locus) and discrete implementation (K1, K2). Shows you understand both domains and how they connect.",
+    steps: [
+      "Discrete plant G_d(z): from K1 ZOH discretisation of G_slip(s).",
+      "Discrete controller C_d(z): Tustin discretisation of PID from H5.",
+      "Open-loop: L_d(z) = C_d(z)·G_d(z). Closed-loop: T_d(z) = L_d/(1+L_d).",
+      "Z-plane root locus: sweep K, compute closed-loop poles, plot. Mark unit circle.",
+      "Map the S-plane design from H7 to Z-plane: z = e^{s·dt}. Verify designed poles land in right Z-plane region.",
+      "Discrete Bode: frequency response of L_d(e^{jω·dt}) for ω from 0 to π/dt. Compare with continuous Bode from H8."
+    ],
+    equations: [
+      "Z-transform: z = e^{s·dt}",
+      "Stability: |z_i| < 1 for all closed-loop poles",
+      "Discrete Bode: L_d(e^{jω·dt}) for ω ∈ [0, π/dt]"
+    ],
+    deliverables: [
+      "Z-plane pole-zero map for plant, controller, closed-loop",
+      "Z-plane root locus with unit circle annotated",
+      "Discrete Bode plot vs continuous Bode from H8",
+      "S-to-Z mapping: verify H7 design points land correctly in Z-plane"
+    ],
+    matlab: [
+      "roots(den) for Z-plane poles",
+      "Manual Z root locus: sweep K, eig(A_cl(K)), plot",
+      "Discrete Bode: L_d = polyval(num_z, exp(1j*omega*dt))./polyval(den_z, exp(1j*omega*dt))"
     ]
   },
 
