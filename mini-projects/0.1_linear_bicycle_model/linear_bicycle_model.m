@@ -1,4 +1,4 @@
-function [A,B] = linear_bicycle_model(V)
+function [A,B] = linear_bicycle_model(V, CF, CR)
 % BICYCLE_MODEL_MATRICES
 % Linear 2-DOF bicycle model — state-space matrices A and B.
 %
@@ -34,12 +34,10 @@ function [A,B] = linear_bicycle_model(V)
 %
 % =========================================================================
 
-m   = 1500;
-Iz  = 2500;
-a   = 1.2;
-b   = 1.4;
-CF  = 80000;
-CR  = 90000;
+m  = 1500;
+Iz = 2500;
+a  = 1.2;
+b  = 1.4;
 
 % --- Stability derivatives --------------------------------------------
 Y_beta  = CF + CR;
